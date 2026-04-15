@@ -238,118 +238,116 @@
         <input id="searchInput" class="search" type="search" placeholder="Search charts by title, description, or category..." />
         <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="olympics">Olympics</button>
-        <button class="filter-btn" data-filter="inequality">Inequality</button>
-        <button class="filter-btn" data-filter="education">Education</button>
-        <button class="filter-btn" data-filter="economy">Economy</button>
+        <button class="filter-btn" data-filter="paralympics">Paralympics</button>
     </div>
 
     <section class="section">
         <h2>Featured Charts</h2>
         <div id="chartGrid" class="grid">
-            <a class="card" href="team_performance_weighted_medal_score.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">
+            <a class="card" href="team_performance_weighted_medal_score.html" data-category="olympics paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Team_Performance_Trends.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
                     <h3 class="title">Team Performance Trends</h3>
-                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>
+                    <p class="desc">Long-term trends in Olympic team performance by weighted medal score, showing dominant, rising, and declining teams across editions.</p>
                 </div>
             </a>
-            <a class="card" href="olympics_vs_paralympics_small_multiples.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">
+            <a class="card" href="olympics_vs_paralympics_small_multiples.html" data-category="olympics paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Olympics_Paralympics_Small-Multiples_Comparison.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
                     <h3 class="title">Small-Multiples Comparison: Olympics vs Paralympics</h3>
-                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>
+                    <p class="desc">Small-multiples comparison of Olympic and Paralympic performance trajectories for selected countries, showing how weighted medal scores change across the two competition systems.</p>
                 </div>
             </a>
-            <a class="card" href="participation_size_vs_medal_efficiency_scatter.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">
+            <a class="card" href="participation_size_vs_medal_efficiency_scatter.html" data-category="olympics paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Participation_Size_and_Medal_Efficiency.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
                     <h3 class="title">Participation Size and Medal Efficiency</h3>
-                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>
+                    <p class="desc">Scatter plot of participation size and medal efficiency for Paralympic teams, where the x-axis shows total participants and the y-axis shows medal efficiency, allowing comparison between scale-driven and efficiency-driven success.</p>
                 </div>
             </a>
-            <a class="card" href="olympic_medal_line_chart_auto_csv_season_filter.html" data-category="olympics sports medals" data-search="olympic medal line chart country filters summer winter medals total gold silver bronze">
+            <a class="card" href="olympic_medal_line_chart_auto_csv_season_filter.html" data-category="olympics" data-search="olympic medal line chart country filters summer winter medals total gold silver bronze">
                 <div class="thumb" style="background-image: url('charts/Olympic_Medal_Trends.png');"></div>
                 <div class="meta">
                     <div class="date">Latest project</div>
                     <h3 class="title">Olympic Medal Trends</h3>
-                    <p class="desc">Interactive D3 line chart with country multi-select, medal type toggle, and summer or winter filtering.</p>
+                    <p class="desc">Long-term trends in total medals won by selected countries in the Olympics.</p>
                 </div>
             </a>
 
-            <a class="card" href="paralympics_medal_line_chart_auto_csv_season_filter.html" data-category="inequality economy" data-search="global inequality income wealth distribution overview">
+            <a class="card" href="paralympics_medal_line_chart_auto_csv_season_filter.html" data-category="paralympics" data-search="global inequality income wealth distribution overview">
                 <div class="thumb" style="background-image: url('charts/Paralympics_Medal_Trends.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
                     <h3 class="title">Paralympic Medal Trends</h3>
-                    <p class="desc">Interactive D3 line chart for Paralympic medal trends with country multi-select, medal type toggle, and summer or winter filtering.</p>
+                    <p class="desc">Long-term trends in Winter Paralympic team performance for selected countries. </p>
                 </div>
             </a>
 
-            <a class="card" href="olympics_vs_paralympics_top_teams_shared_controls.html" data-category="education" data-search="education chart school literacy enrollment access">
-                <div class="thumb placeholder" data-label="Replace with a PNG or JPG thumbnail"></div>
-                <div class="meta">
-                    <div class="date"> </div>
-                    <h3 class="title">Top Teams Trends: Olympics vs Paralympics</h3>
-                    <p class="desc">A placeholder card for a future education dashboard or trend chart.</p>
-                </div>
-            </a>
+<!--            <a class="card" href="olympics_vs_paralympics_top_teams_shared_controls.html" data-category="education" data-search="education chart school literacy enrollment access">-->
+<!--                <div class="thumb placeholder" data-label="Replace with a PNG or JPG thumbnail"></div>-->
+<!--                <div class="meta">-->
+<!--                    <div class="date"> </div>-->
+<!--                    <h3 class="title">Top Teams Trends: Olympics vs Paralympics</h3>-->
+<!--                    <p class="desc">A placeholder card for a future education dashboard or trend chart.</p>-->
+<!--                </div>-->
+<!--            </a>-->
 
-            <a class="card" href="olympics_vs_paralympics_expansion_trends.html" data-category="economy" data-search="economic growth gdp trend development chart">
-                <div class="thumb placeholder" data-label="Add another chart link here"></div>
+            <a class="card" href="olympics_vs_paralympics_expansion_trends.html" data-category="olympics paralympics" data-search="economic growth gdp trend development chart">
+                <div class="thumb" style="background-image: url('charts/medal_wining_summer.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
                     <h3 class="title">Olympics vs Paralympics Expansion Trends</h3>
-                    <p class="desc">A reusable slot for GDP, development, or macroeconomic comparison charts.</p>
+                    <p class="desc">Change in the number of medal-winning and participating countries over time in the Summer Olympics and Summer Paralympics.</p>
                 </div>
             </a>
 
-            <a class="card" href="olympic_event_count_trends.html" data-category="inequality economy" data-search="gini coefficient explorer line chart inequality measurement">
-                <div class="thumb placeholder" data-label="You can duplicate this card block"></div>
-                <div class="meta">
-                    <div class="date"> </div>
-                    <h3 class="title">Olympic Event Count Trends</h3>
-                    <p class="desc">A placeholder for a chart that compares inequality metrics across countries and years.</p>
-                </div>
-            </a>
+<!--            <a class="card" href="olympic_event_count_trends.html" data-category="inequality economy" data-search="gini coefficient explorer line chart inequality measurement">-->
+<!--                <div class="thumb placeholder" data-label="You can duplicate this card block"></div>-->
+<!--                <div class="meta">-->
+<!--                    <div class="date"> </div>-->
+<!--                    <h3 class="title">Olympic Event Count Trends</h3>-->
+<!--                    <p class="desc">A placeholder for a chart that compares inequality metrics across countries and years.</p>-->
+<!--                </div>-->
+<!--            </a>-->
 
-            <a class="card" href="olympic_scatter_ptotal_mtotal.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">
+            <a class="card" href="olympic_scatter_ptotal_mtotal.html" data-category="paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Scatter_Mtoal_Ptotal.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
                     <h3 class="title">Paralympics Scatter Plot</h3>
-                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>
+                    <p class="desc">Relationship between participation size and team performance in the Paralympics.</p>
                 </div>
             </a>
 
-            <a class="card" href="paralympics_medal_efficiency_vs_performance_trendline.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">
+            <a class="card" href="paralympics_medal_efficiency_vs_performance_trendline.html" data-category="paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Medal_EfficiencyvsTeam_Performance.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
                     <h3 class="title">Paralympics Medal Efficiency vs Performance Trendline</h3>
-                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>
+                    <p class="desc">Relationship between medal efficiency and team performance in the Paralympics.</p>
                 </div>
             </a>
 
-            <a class="card" href="average_medal_efficiency_summer_winter.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">
-                <div class="thumb placeholder" data-label="Create unlimited new entries"></div>
+            <a class="card" href="average_medal_efficiency_summer_winter.html" data-category="olympics paralympics" data-search="custom chart new visualization dashboard template">
+                <div class="thumb" style="background-image: url('charts/Paralympic_Average_Medal_Efficiency_Trends.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Add Your Next Visualization</h3>
-                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>
+                    <h3 class="title">Average Medal Efficiency Trends</h3>
+                    <p class="desc">Change in average medal efficiency over time in the Summer and Winter Paralympics.</p>
                 </div>
             </a>
 
-            <a class="card" href="index_line_chart_medal_growth.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">
-                <div class="thumb placeholder" data-label="Create unlimited new entries"></div>
-                <div class="meta">
-                    <div class="date"> </div>
-                    <h3 class="title">Medal growth</h3>
-                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>
-                </div>
-            </a>
+<!--            <a class="card" href="index_line_chart_medal_growth.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">-->
+<!--                <div class="thumb placeholder" data-label="Create unlimited new entries"></div>-->
+<!--                <div class="meta">-->
+<!--                    <div class="date"> </div>-->
+<!--                    <h3 class="title">Medal growth</h3>-->
+<!--                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>-->
+<!--                </div>-->
+<!--            </a>-->
 
 
 
