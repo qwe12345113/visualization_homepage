@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Average Medal Efficiency Trends</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #1f2937; }
+    .container { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+    .sidebar { background: #ffffff; border-right: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; }
+    .main { padding: 24px; }
+    h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.2; }
+    .subtitle { margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.6; max-width: 1000px; }
+    .control-group { margin-bottom: 18px; }
+    .label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+    select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #fff; }
+    .hint { margin-top: 8px; font-size: 12px; color: #6b7280; line-height: 1.5; }
+    .status { margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 14px; line-height: 1.5; }
+    .chart-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-height: 560px; }
+    #chart { width: 100%; min-height: 520px; position: relative; }
+    .footer-note { margin-top: 12px; font-size: 12px; color: #6b7280; line-height: 1.6; }
+    .axis path, .axis line { stroke: #cfd8e3; }
+    .grid line { stroke: #eef2f7; }
+    .grid path { display: none; }
+    .legend text { fill: #374151; font-size: 14px; dominant-baseline: middle; }
+    .tooltip { position: absolute; pointer-events: none; background: rgba(17, 24, 39, 0.94); color: white; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 6px 20px rgba(0,0,0,0.18); opacity: 0; transform: translate(-50%, calc(-100% - 10px)); white-space: nowrap; }
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } .sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <aside class="sidebar">
+    <div class="control-group">
+      <label class="label" for="datasetSelect">Dataset</label>
+      <select id="datasetSelect">
+        <option value="Olympics" selected>Olympics</option>
+        <option value="Paralympics">Paralympics</option>
+      </select>
+      <div class="hint">
+        X-axis: Year. Y-axis: average medal efficiency, defined as M_Total / P_Total.
+        The two lines compare Summer and Winter.
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <h1>Average Medal Efficiency Trends</h1>
+    <p class="subtitle">
+      This chart shows how average medal efficiency changes over time. The y-axis is the average value of
+      M_Total / P_Total for each year, and the two lines represent Summer and Winter. Use the control on
+      the left to switch between Olympics and Paralympics.
+    </p>
+
+    <div id="status" class="status">Loading CSV data...</div>
+
+    <div class="chart-wrap">
+      <div id="chart"></div>
+    </div>
+
+    <div class="footer-note">
+      Files used: <code>olympic_results_in_winter_paralympics_format_with_mixed.csv</code>,
+      <code>summer_paralympics.csv</code>, and <code>winter_paralympics.csv</code>.<br>
+      Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from
+      <code>file://</code>, run a local server first.
+    </div>
+  </main>
+</div>
+
+<script>
+    const OLYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/olympic_results_in_winter_paralympics_format_with_mixed.csv';
+    const SUMMER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/summer_paralympics.csv';
+    const WINTER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/winter_paralympics.csv';
+
+
+    const WINTER_GAME_KEYS = new Set([
+    '1924|Chamonix|France','1928|St Moritz|Switzerland','1932|Lake Placid|United States',
+    '1936|Garmisch Partenkirchen|Germany','1948|St Moritz|Switzerland','1952|Oslo|Norway',
+    '1956|Cortina D Ampezzo|Italy','1960|Squaw Valley|United States','1964|Innsbruck|Austria',
+    '1968|Grenoble|France','1972|Sapporo|Japan','1976|Innsbruck|Austria','1980|Lake Placid|United States',
+    '1984|Sarajevo|Yugoslavia','1988|Calgary|Canada','1992|Albertville|France','1994|Lillehammer|Norway',
+    '1998|Nagano|Japan','2002|Salt Lake City|United States','2006|Turin|Italy','2010|Vancouver|Canada',
+    '2014|Sochi|Russian Federation','2018|Pyeongchang|Republic of Korea','2022|Beijing|China'
+  ]);
+
+  const datasetSelectEl = document.getElementById('datasetSelect');
+  const statusEl = document.getElementById('status');
+  const chartEl = document.getElementById('chart');
+
+  let olympicRows = [];
+  let paralympicRows = [];
+
+  function parseNumber(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  }
+
+  function inferOlympicSeason(year, city, country) {
+    const key = `${year}|${city}|${country}`;
+    return WINTER_GAME_KEYS.has(key) ? 'Winter' : 'Summer';
+  }
+
+  function loadCsv(fileName, season) {
+    return new Promise((resolve, reject) => {
+      Papa.parse(fileName, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          try {
+            const rows = (results.data || []).map(row => {
+              const year = parseNumber(row.Year);
+              const pTotal = parseNumber(row.P_Total);
+              const mTotal = parseNumber(row.M_Total);
+              return {
+                Country: row.Country,
+                Year: year,
+                P_Total: pTotal,
+                M_Total: mTotal,
+                Efficiency: pTotal > 0 ? (mTotal / pTotal) : null,
+                Season: season
+              };
+            }).filter(row => row.Country && row.Year > 0 && row.Efficiency !== null);
+            resolve(rows);
+          } catch (error) {
+            reject(error);
+          }
+        },
+        error: reject
+      });
+    });
+  }
+
+  function currentRows() {
+    return datasetSelectEl.value === 'Olympics' ? olympicRows : paralympicRows;
+  }
+
+  function buildSeries(rows) {
+    const grouped = d3.group(rows, d => d.Season, d => d.Year);
+
+    function seasonSeries(season) {
+      const seasonMap = grouped.get(season) || new Map();
+      return Array.from(seasonMap.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([year, yearRows]) => ({
+          year,
+          value: d3.mean(yearRows, d => d.Efficiency)
+        }))
+        .filter(d => Number.isFinite(d.value));
+    }
+
+    return [
+      { label: 'Summer', color: '#3366CC', values: seasonSeries('Summer') },
+      { label: 'Winter', color: '#DC3912', values: seasonSeries('Winter') }
+    ];
+  }
+
+  function getReadableYearTicks(yearExtent) {
+    const [minYear, maxYear] = yearExtent;
+    const span = maxYear - minYear;
+    let step = 4;
+    if (span > 80) step = 16;
+    else if (span > 50) step = 12;
+    else if (span > 30) step = 8;
+    const tickStart = Math.ceil(minYear / step) * step;
+    return d3.range(tickStart, maxYear + 1, step);
+  }
+
+  function renderChart() {
+    const rows = currentRows();
+    const series = buildSeries(rows);
+    const allValues = series.flatMap(s => s.values);
+
+    chartEl.innerHTML = '';
+    const tooltip = d3.select(chartEl).append('div').attr('class', 'tooltip');
+
+    if (!allValues.length) {
+      statusEl.textContent = `Dataset: ${datasetSelectEl.value} | No data available`;
+      d3.select(chartEl).append('div').style('padding', '20px').style('color', '#6b7280').text('No data available.');
+      return;
+    }
+
+    const yearExtent = d3.extent(allValues, d => d.year);
+    statusEl.textContent = `Dataset: ${datasetSelectEl.value} | Summer years: ${series[0].values.length} | Winter years: ${series[1].values.length}`;
+
+    const width = Math.max(chartEl.clientWidth, 860);
+    const height = 540;
+    const margin = { top: 20, right: 200, bottom: 55, left: 90 };
+
+    const svg = d3.select(chartEl).append('svg').attr('width', width).attr('height', height);
+
+    const x = d3.scaleLinear().domain(yearExtent).range([margin.left, width - margin.right]);
+    const y = d3.scaleLinear().domain([0, d3.max(allValues, d => d.value) || 0]).nice().range([height - margin.bottom, margin.top]);
+
+    const xTicks = getReadableYearTicks(yearExtent);
+
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x).tickValues(xTicks).tickSize(-(height - margin.top - margin.bottom)).tickFormat(''));
+
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).ticks(6).tickSize(-(width - margin.left - margin.right)).tickFormat(''));
+
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format('d')))
+      .selectAll('text').style('font-size', '11px');
+
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).ticks(6));
+
+    svg.append('text').attr('x', (margin.left + width - margin.right) / 2).attr('y', height - 12)
+      .attr('text-anchor', 'middle').attr('fill', '#374151').style('font-size', '14px').text('Year');
+
+    svg.append('text').attr('transform', 'rotate(-90)')
+      .attr('x', -(margin.top + height - margin.bottom) / 2).attr('y', 20)
+      .attr('text-anchor', 'middle').attr('fill', '#374151').style('font-size', '14px')
+      .text('Average medal efficiency (M_Total / P_Total)');
+
+    const line = d3.line().x(d => x(d.year)).y(d => y(d.value)).curve(d3.curveLinear);
+    const seriesGroup = svg.append('g');
+
+    series.forEach(s => {
+      seriesGroup.append('path').datum(s.values).attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', 3).attr('d', line);
+
+      seriesGroup.selectAll(null).data(s.values).enter().append('circle')
+        .attr('cx', d => x(d.year)).attr('cy', d => y(d.value)).attr('r', 4).attr('fill', s.color)
+        .on('mouseenter', function(event, d) {
+          tooltip.style('opacity', 1).html(`<strong>${datasetSelectEl.value} - ${s.label}</strong><br>Year: ${d.year}<br>Average efficiency: ${d.value.toFixed(3)}`);
+        })
+        .on('mousemove', function(event) {
+          const rect = chartEl.getBoundingClientRect();
+          tooltip.style('left', `${event.clientX - rect.left}px`).style('top', `${event.clientY - rect.top}px`);
+        })
+        .on('mouseleave', function() { tooltip.style('opacity', 0); });
+    });
+
+    const legend = svg.append('g').attr('class', 'legend').attr('transform', `translate(${width - margin.right + 20}, ${margin.top + 20})`);
+
+    series.forEach((s, index) => {
+      const row = legend.append('g').attr('transform', `translate(0, ${index * 28})`);
+      row.append('line').attr('x1', 0).attr('x2', 34).attr('y1', 0).attr('y2', 0).attr('stroke', s.color).attr('stroke-width', 4);
+      row.append('text').attr('x', 42).attr('y', 0).text(s.label);
+    });
+  }
+
+  function init() {
+    Promise.all([
+      new Promise((resolve, reject) => {
+        Papa.parse(OLYMPIC_CSV, {
+          download: true, header: true, skipEmptyLines: true,
+          complete: (results) => {
+            try {
+              const parsed = (results.data || []).map(row => {
+                const year = parseNumber(row.Year);
+                const pTotal = parseNumber(row.P_Total);
+                const mTotal = parseNumber(row.M_Total);
+                return {
+                  Country: row.Country,
+                  Year: year,
+                  P_Total: pTotal,
+                  M_Total: mTotal,
+                  Efficiency: pTotal > 0 ? (mTotal / pTotal) : null,
+                  Season: inferOlympicSeason(year, row.Host_City, row.Host_Country)
+                };
+              }).filter(row => row.Country && row.Year > 0 && row.Efficiency !== null);
+              resolve(parsed);
+            } catch (e) { reject(e); }
+          },
+          error: reject
+        });
+      }),
+      loadCsv(SUMMER_PARALYMPIC_CSV, 'Summer'),
+      loadCsv(WINTER_PARALYMPIC_CSV, 'Winter')
+    ]).then(([olympics, paraSummer, paraWinter]) => {
+      olympicRows = olympics;
+      paralympicRows = [...paraSummer, ...paraWinter];
+
+      if (!olympicRows.length && !paralympicRows.length) {
+        statusEl.textContent = 'CSV loaded, but no usable data rows were found.';
+        return;
+      }
+
+      renderChart();
+      datasetSelectEl.addEventListener('change', renderChart);
+      window.addEventListener('resize', renderChart);
+    }).catch(() => {
+      statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
+      statusEl.style.background = '#fef2f2';
+      statusEl.style.color = '#b91c1c';
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>

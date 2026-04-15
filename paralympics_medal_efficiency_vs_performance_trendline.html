@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medal Efficiency vs Team Performance</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #1f2937; }
+        .container { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+        .sidebar { background: #ffffff; border-right: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; }
+        .main { padding: 24px; }
+        h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.2; }
+        .subtitle { margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.6; max-width: 1000px; }
+        .control-group { margin-bottom: 18px; }
+        .label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+        }
+        .hint { margin-top: 8px; font-size: 12px; color: #6b7280; line-height: 1.5; }
+        .status {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .chart-wrap {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            min-height: 620px;
+        }
+        #chart {
+            width: 100%;
+            min-height: 560px;
+            position: relative;
+        }
+        .footer-note {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+        .axis path, .axis line { stroke: #cfd8e3; }
+        .grid line { stroke: #eef2f7; }
+        .grid path { display: none; }
+        .legend text { fill: #374151; font-size: 13px; dominant-baseline: middle; }
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(17, 24, 39, 0.94);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            opacity: 0;
+            transform: translate(-50%, calc(-100% - 10px));
+            white-space: nowrap;
+        }
+        .legend-note { margin-top: 10px; font-size: 12px; color: #6b7280; }
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            .sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <aside class="sidebar">
+        <div class="control-group">
+            <label class="label" for="seasonFilter">Season filter</label>
+            <select id="seasonFilter">
+                <option value="All" selected>Summer + Winter</option>
+                <option value="Summer">Summer only</option>
+                <option value="Winter">Winter only</option>
+            </select>
+            <div class="hint">
+                Fixed design based on the requested specification:<br>
+                X-axis = M_Total / P_Total<br>
+                Y-axis = M_Total<br>
+                Color = Season (Summer / Winter)<br>
+                Dataset = Paralympics only<br>
+                Each point = one team in one year<br>
+                Trend lines = black dashed
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <h1>Medal Efficiency vs Team Performance</h1>
+        <p class="subtitle">
+            This scatter plot is designed to compare medal efficiency and team performance in the Paralympics only.
+            Each point represents one team in one year. The x-axis shows medal efficiency (M_Total / P_Total), the y-axis shows total medals (M_Total),
+            points are colored by season, and black dashed trend lines summarize the overall relationship for Summer and Winter Paralympics.
+        </p>
+
+        <div id="status" class="status">Loading CSV data...</div>
+
+        <div class="chart-wrap">
+            <div id="chart"></div>
+            <div class="legend-note">Colored circles show country-year observations by season. Dashed trend lines use the same season colors.</div>
+        </div>
+
+        <div class="footer-note">
+            Files used: <code>summer_paralympics.csv</code> and <code>winter_paralympics.csv</code>.<br>
+            Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from
+            <code>file://</code>, run a local server first.
+        </div>
+    </main>
+</div>
+
+<script>
+    const SUMMER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/summer_paralympics.csv';
+    const WINTER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/winter_paralympics.csv';
+
+    const seasonFilterEl = document.getElementById('seasonFilter');
+    const statusEl = document.getElementById('status');
+    const chartEl = document.getElementById('chart');
+
+    const seasonColors = {
+        Summer: '#3366CC',
+        Winter: '#DC3912'
+    };
+
+    let rows = [];
+
+    function parseNumber(value) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function loadCsv(fileName, season) {
+        return new Promise((resolve, reject) => {
+            Papa.parse(fileName, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    try {
+                        const parsed = (results.data || []).map(row => {
+                            const pTotal = parseNumber(row.P_Total);
+                            const mTotal = parseNumber(row.M_Total);
+                            return {
+                                Country: row.Country,
+                                Year: parseNumber(row.Year),
+                                P_Total: pTotal,
+                                M_Total: mTotal,
+                                MedalEfficiency: pTotal > 0 ? mTotal / pTotal : null,
+                                GamesType: season
+                            };
+                        }).filter(row =>
+                            row.Country &&
+                            row.Year > 0 &&
+                            row.MedalEfficiency !== null &&
+                            Number.isFinite(row.MedalEfficiency) &&
+                            Number.isFinite(row.M_Total)
+                        );
+                        resolve(parsed);
+                    } catch (e) {
+                        reject(e);
+                    }
+                },
+                error: reject
+            });
+        });
+    }
+
+    function filteredRows() {
+        const season = seasonFilterEl.value;
+        if (season === 'All') return rows;
+        return rows.filter(d => d.GamesType === season);
+    }
+
+    function linearRegression(data) {
+        if (!data.length) return null;
+
+        const n = data.length;
+        const sumX = d3.sum(data, d => d.MedalEfficiency);
+        const sumY = d3.sum(data, d => d.M_Total);
+        const sumXY = d3.sum(data, d => d.MedalEfficiency * d.M_Total);
+        const sumXX = d3.sum(data, d => d.MedalEfficiency * d.MedalEfficiency);
+
+        const denominator = (n * sumXX) - (sumX * sumX);
+        if (denominator === 0) return null;
+
+        const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
+        const intercept = (sumY - slope * sumX) / n;
+
+        const minX = d3.min(data, d => d.MedalEfficiency);
+        const maxX = d3.max(data, d => d.MedalEfficiency);
+
+        return {
+            points: [
+                { x: minX, y: slope * minX + intercept },
+                { x: maxX, y: slope * maxX + intercept }
+            ]
+        };
+    }
+
+    function renderChart() {
+        const data = filteredRows();
+        chartEl.innerHTML = '';
+        const tooltip = d3.select(chartEl).append('div').attr('class', 'tooltip');
+
+        if (!data.length) {
+            statusEl.textContent = 'No data available for the current selection.';
+            d3.select(chartEl)
+                .append('div')
+                .style('padding', '20px')
+                .style('color', '#6b7280')
+                .text('No data available.');
+            return;
+        }
+
+        const width = Math.max(chartEl.clientWidth, 920);
+        const height = 580;
+        const margin = { top: 20, right: 220, bottom: 60, left: 70 };
+
+        const svg = d3.select(chartEl)
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        const x = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.MedalEfficiency) || 0])
+            .nice()
+            .range([margin.left, width - margin.right]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.M_Total) || 0])
+            .nice()
+            .range([height - margin.bottom, margin.top]);
+
+        statusEl.textContent = `Paralympics only | Season filter: ${seasonFilterEl.value} | Points: ${data.length.toLocaleString()}`;
+
+        svg.append('g')
+            .attr('class', 'grid')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(8).tickSize(-(height - margin.top - margin.bottom)).tickFormat(''));
+
+        svg.append('g')
+            .attr('class', 'grid')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y).ticks(8).tickSize(-(width - margin.left - margin.right)).tickFormat(''));
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(8));
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y).ticks(8));
+
+        svg.append('text')
+            .attr('x', (margin.left + width - margin.right) / 2)
+            .attr('y', height - 14)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#374151')
+            .style('font-size', '14px')
+            .text('M_Total / P_Total');
+
+        svg.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -(margin.top + height - margin.bottom) / 2)
+            .attr('y', 20)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#374151')
+            .style('font-size', '14px')
+            .text('M_Total');
+
+        svg.append('g')
+            .selectAll('circle')
+            .data(data)
+            .enter()
+            .append('circle')
+            .attr('cx', d => x(d.MedalEfficiency))
+            .attr('cy', d => y(d.M_Total))
+            .attr('r', 4.8)
+            .attr('fill', d => seasonColors[d.GamesType])
+            .attr('fill-opacity', 0.72)
+            .attr('stroke', '#ffffff')
+            .attr('stroke-width', 0.8)
+            .on('mouseenter', function(event, d) {
+                tooltip.style('opacity', 1).html(
+                    `<strong>${d.Country}</strong><br>` +
+                    `Year: ${d.Year}<br>` +
+                    `Season: ${d.GamesType}<br>` +
+                    `M_Total / P_Total: ${d.MedalEfficiency.toFixed(3)}<br>` +
+                    `M_Total: ${d.M_Total}<br>` +
+                    `P_Total: ${d.P_Total}`
+                );
+            })
+            .on('mousemove', function(event) {
+                const rect = chartEl.getBoundingClientRect();
+                tooltip.style('left', `${event.clientX - rect.left}px`).style('top', `${event.clientY - rect.top}px`);
+            })
+            .on('mouseleave', function() {
+                tooltip.style('opacity', 0);
+            });
+
+        const seasonsToDraw = seasonFilterEl.value === 'All'
+            ? ['Summer', 'Winter']
+            : [seasonFilterEl.value];
+
+        seasonsToDraw.forEach(season => {
+            const seasonData = data.filter(d => d.GamesType === season);
+            const regression = linearRegression(seasonData);
+            if (!regression) return;
+
+            svg.append('line')
+                .attr('x1', x(regression.points[0].x))
+                .attr('y1', y(regression.points[0].y))
+                .attr('x2', x(regression.points[1].x))
+                .attr('y2', y(regression.points[1].y))
+                .attr('stroke', seasonColors[season])
+                .attr('stroke-width', 3)
+                .attr('stroke-dasharray', '8,6')
+                .attr('opacity', 0.95);
+        });
+
+        const legend = svg.append('g')
+            .attr('class', 'legend')
+            .attr('transform', `translate(${width - margin.right + 20}, ${margin.top + 20})`);
+
+        const legendItems = seasonsToDraw.map(season => ({
+            label: season,
+            color: seasonColors[season]
+        }));
+
+        legend.append('text')
+            .attr('x', 0)
+            .attr('y', -8)
+            .style('font-weight', '700')
+            .text('Season');
+
+        legendItems.forEach((item, index) => {
+            const row = legend.append('g')
+                .attr('transform', `translate(0, ${index * 28 + 14})`);
+
+            row.append('circle')
+                .attr('cx', 7)
+                .attr('cy', 0)
+                .attr('r', 6)
+                .attr('fill', item.color);
+
+            row.append('text')
+                .attr('x', 20)
+                .attr('y', 0)
+                .text(item.label);
+        });
+
+        const trendLegendTitle = legend.append('text')
+            .attr('x', 0)
+            .attr('y', legendItems.length * 28 + 28)
+            .style('font-weight', '700')
+            .text('Trend lines');
+
+        seasonsToDraw.forEach((season, index) => {
+            const row = legend.append('g')
+                .attr('transform', `translate(0, ${legendItems.length * 28 + 48 + index * 24})`);
+
+            row.append('line')
+                .attr('x1', 0)
+                .attr('x2', 30)
+                .attr('y1', 0)
+                .attr('y2', 0)
+                .attr('stroke', seasonColors[season])
+                .attr('stroke-width', 3)
+                .attr('stroke-dasharray', '8,6');
+
+            row.append('text')
+                .attr('x', 40)
+                .attr('y', 0)
+                .text(`${season} trend`);
+        });
+    }
+
+    function init() {
+        Promise.all([
+            loadCsv(SUMMER_PARALYMPIC_CSV, 'Summer'),
+            loadCsv(WINTER_PARALYMPIC_CSV, 'Winter')
+        ]).then(([summerRows, winterRows]) => {
+            rows = [...summerRows, ...winterRows];
+
+            if (!rows.length) {
+                statusEl.textContent = 'CSV loaded, but no usable data rows were found.';
+                return;
+            }
+
+            renderChart();
+            seasonFilterEl.addEventListener('change', renderChart);
+            window.addEventListener('resize', renderChart);
+        }).catch(() => {
+            statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
+            statusEl.style.background = '#fef2f2';
+            statusEl.style.color = '#b91c1c';
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>

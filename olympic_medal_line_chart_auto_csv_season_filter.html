@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Olympic Medal Line Chart (D3)</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .main {
+            padding: 24px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 30px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            margin: 0 0 20px;
+            color: #4b5563;
+            font-size: 15px;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button:hover {
+            background: #f9fafb;
+        }
+
+        .country-list {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            max-height: 62vh;
+            overflow-y: auto;
+        }
+
+        .country-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 15px;
+        }
+
+        .country-item:last-child {
+            border-bottom: none;
+        }
+
+        .status {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .chart-wrap {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            min-height: 560px;
+        }
+
+        #chart {
+            width: 100%;
+            min-height: 500px;
+            position: relative;
+        }
+
+        .footer-note {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        .axis path,
+        .axis line {
+            stroke: #cfd8e3;
+        }
+
+        .grid line {
+            stroke: #eef2f7;
+        }
+
+        .grid path {
+            display: none;
+        }
+
+        .legend text {
+            fill: #374151;
+            font-size: 13px;
+            dominant-baseline: middle;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(17, 24, 39, 0.94);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            opacity: 0;
+            transform: translate(-50%, calc(-100% - 10px));
+            white-space: nowrap;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .country-list {
+                max-height: 260px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <aside class="sidebar">
+        <div class="control-group">
+            <label class="label" for="metricSelect">Medal type</label>
+            <select id="metricSelect">
+                <option value="Gold">Gold medals</option>
+                <option value="Silver">Silver medals</option>
+                <option value="Bronze">Bronze medals</option>
+                <option value="M_Total" selected>Total medals</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label class="label" for="seasonSelect">Games type</label>
+            <select id="seasonSelect">
+                <option value="Summer" selected>Summer Olympics</option>
+                <option value="Winter">Winter Olympics</option>
+                <option value="All" >Summer + Winter</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label class="label" for="countrySearch">Search countries</label>
+            <input id="countrySearch" type="text" placeholder="Type to search a country" />
+        </div>
+
+        <div class="control-group">
+            <label class="label">Countries</label>
+            <div class="button-row">
+                <button id="selectTopBtn" type="button">Select top 5</button>
+                <button id="clearBtn" type="button">Clear all</button>
+            </div>
+            <div id="countryList" class="country-list"></div>
+            <div class="hint">You can select multiple countries.</div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <h1>Olympic Medal Trends by Country</h1>
+        <p class="subtitle">
+            X-axis: Year. Y-axis: Medal count. Choose a medal type, switch between Summer and Winter Olympics, and compare countries over time.
+        </p>
+
+        <div id="status" class="status">Loading CSV data...</div>
+
+        <div class="chart-wrap">
+            <div id="chart"></div>
+        </div>
+
+        <div class="footer-note">
+            Default CSV file:
+            <code>olympic_results_in_winter_paralympics_format_with_mixed.csv</code><br>
+            Keep the HTML file and the CSV file in the same folder.
+            If the browser blocks local CSV loading from <code>file://</code>, run a local server first.
+        </div>
+    </main>
+</div>
+
+<script>
+    const CSV_FILE = 'Datasets-20260409/Olympics-Paralympics/olympic_results_in_winter_paralympics_format_with_mixed.csv';
+
+    const statusEl = document.getElementById('status');
+    const countryListEl = document.getElementById('countryList');
+    const countrySearchEl = document.getElementById('countrySearch');
+    const metricSelectEl = document.getElementById('metricSelect');
+    const seasonSelectEl = document.getElementById('seasonSelect');
+    const selectTopBtn = document.getElementById('selectTopBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const chartEl = document.getElementById('chart');
+
+    let parsedRows = [];
+    let countries = [];
+    let selectedCountries = new Set();
+    let countryTotals = new Map();
+
+    const WINTER_GAME_KEYS = new Set([
+        '1924|Chamonix|France',
+        '1928|St Moritz|Switzerland',
+        '1932|Lake Placid|United States',
+        '1936|Garmisch Partenkirchen|Germany',
+        '1948|St Moritz|Switzerland',
+        '1952|Oslo|Norway',
+        '1956|Cortina D Ampezzo|Italy',
+        '1960|Squaw Valley|United States',
+        '1964|Innsbruck|Austria',
+        '1968|Grenoble|France',
+        '1972|Sapporo|Japan',
+        '1976|Innsbruck|Austria',
+        '1980|Lake Placid|United States',
+        '1984|Sarajevo|Yugoslavia',
+        '1988|Calgary|Canada',
+        '1992|Albertville|France',
+        '1994|Lillehammer|Norway',
+        '1998|Nagano|Japan',
+        '2002|Salt Lake City|United States',
+        '2006|Turin|Italy',
+        '2010|Vancouver|Canada',
+        '2014|Sochi|Russian Federation',
+        '2018|Pyeongchang|Republic of Korea',
+        '2022|Beijing|China'
+    ]);
+
+    const colorPalette = [
+        '#3366CC', '#DC3912', '#FF9900', '#109618', '#990099',
+        '#0099C6', '#DD4477', '#66AA00', '#B82E2E', '#316395',
+        '#994499', '#22AA99', '#AAAA11', '#6633CC', '#E67300',
+        '#8B0707', '#651067', '#329262', '#5574A6', '#3B3EAC'
+    ];
+
+    function parseNumber(value) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function inferSeason(row) {
+        const key = `${row.Year}|${row.Host_City}|${row.Host_Country}`;
+        return WINTER_GAME_KEYS.has(key) ? 'Winter' : 'Summer';
+    }
+
+    function getSeasonLabel(value) {
+        return {
+            All: 'Summer + Winter Olympics',
+            Summer: 'Summer Olympics',
+            Winter: 'Winter Olympics'
+        }[value] || value;
+    }
+
+    function getSelectedMetricLabel(metric) {
+        return {
+            Gold: 'Gold medals',
+            Silver: 'Silver medals',
+            Bronze: 'Bronze medals',
+            M_Total: 'Total medals'
+        }[metric] || metric;
+    }
+
+    function getFilteredRows() {
+        const season = seasonSelectEl.value;
+        return season === 'All'
+            ? parsedRows
+            : parsedRows.filter(row => row.Season === season);
+    }
+
+    function computeCountryTotals(rows, metric) {
+        const totals = new Map();
+        rows.forEach(row => {
+            totals.set(
+                row.Country,
+                (totals.get(row.Country) || 0) + parseNumber(row[metric])
+            );
+        });
+        return totals;
+    }
+
+    function buildCountryTotals() {
+        countryTotals = computeCountryTotals(getFilteredRows(), metricSelectEl.value);
+    }
+
+    function getDisplayCountryOrder(rows, metric, searchTerm = '') {
+        const totals = computeCountryTotals(rows, metric);
+        const keyword = searchTerm.trim().toLowerCase();
+
+        return countries
+            .filter(country => totals.has(country))
+            .filter(country => country.toLowerCase().includes(keyword))
+            .sort((a, b) => {
+                const totalDiff = (totals.get(b) || 0) - (totals.get(a) || 0);
+                return totalDiff !== 0 ? totalDiff : a.localeCompare(b);
+            });
+    }
+
+    function buildCountryList(filterText = '') {
+        const filteredRows = getFilteredRows();
+        const metric = metricSelectEl.value;
+        const totals = computeCountryTotals(filteredRows, metric);
+        const displayCountries = getDisplayCountryOrder(filteredRows, metric, filterText);
+
+        countryListEl.innerHTML = '';
+
+        if (!displayCountries.length) {
+            countryListEl.innerHTML =
+                '<div class="country-item">No countries match the current filter.</div>';
+            return;
+        }
+
+        displayCountries.forEach(country => {
+            const item = document.createElement('label');
+            item.className = 'country-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = selectedCountries.has(country);
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) selectedCountries.add(country);
+                else selectedCountries.delete(country);
+                renderChart();
+            });
+
+            const text = document.createElement('span');
+            text.textContent = `${country} (${totals.get(country) || 0})`;
+
+            item.appendChild(checkbox);
+            item.appendChild(text);
+            countryListEl.appendChild(item);
+        });
+    }
+
+    function buildSeries(rows, metric) {
+        const yearExtent = d3.extent(rows, d => d.Year);
+        const displayOrder = getDisplayCountryOrder(rows, metric);
+        const selected = displayOrder.filter(country => selectedCountries.has(country));
+
+        const series = selected.map((country, index) => ({
+            country,
+            color: colorPalette[index % colorPalette.length],
+            values: rows
+                .filter(row => row.Country === country)
+                .sort((a, b) => a.Year - b.Year)
+                .map(row => ({
+                    year: row.Year,
+                    value: parseNumber(row[metric])
+                }))
+        }));
+
+        return { yearExtent, series };
+    }
+
+    function updateStatus(rows, yearExtent) {
+        const seasonLabel = getSeasonLabel(seasonSelectEl.value);
+        const metricLabel = metricSelectEl.options[metricSelectEl.selectedIndex].text;
+        const activeCountries = Array.from(selectedCountries).filter(country =>
+            rows.some(row => row.Country === country)
+        );
+
+        const yearText =
+            yearExtent[0] != null && yearExtent[1] != null
+                ? `${yearExtent[0]} to ${yearExtent[1]}`
+                : 'No available year range';
+
+        statusEl.textContent =
+            `${seasonLabel} | ${metricLabel} | ${activeCountries.length} country${activeCountries.length === 1 ? '' : 'ies'} selected | Year range: ${yearText}`;
+    }
+
+
+    function getReadableYearTicks(yearExtent) {
+        const [minYear, maxYear] = yearExtent;
+        const span = maxYear - minYear;
+
+        let step = 4;
+        if (span > 80) step = 16;
+        else if (span > 50) step = 12;
+        else if (span > 30) step = 8;
+
+        const tickStart = Math.ceil(minYear / step) * step;
+        return d3.range(tickStart, maxYear + 1, step);
+    }
+
+    function renderChart() {
+        const rows = getFilteredRows();
+        const metric = metricSelectEl.value;
+        const { yearExtent, series } = buildSeries(rows, metric);
+
+        updateStatus(rows, yearExtent);
+        chartEl.innerHTML = '';
+
+        const tooltip = d3.select(chartEl)
+            .append('div')
+            .attr('class', 'tooltip');
+
+        if (!rows.length || !series.length) {
+            d3.select(chartEl)
+                .append('div')
+                .style('padding', '20px')
+                .style('color', '#6b7280')
+                .text('Select at least one country to display the chart.');
+            return;
+        }
+
+        const width = Math.max(chartEl.clientWidth, 760);
+        const height = 520;
+        const margin = { top: 20, right: 230, bottom: 55, left: 60 };
+
+        const svg = d3.select(chartEl)
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        const x = d3.scaleLinear()
+            .domain(yearExtent)
+            .range([margin.left, width - margin.right]);
+
+        const maxY = d3.max(series, s => d3.max(s.values, d => d.value)) || 0;
+        const y = d3.scaleLinear()
+            .domain([0, maxY])
+            .nice()
+            .range([height - margin.bottom, margin.top]);
+
+        const xTicks = getReadableYearTicks(yearExtent);
+
+        svg.append('g')
+            .attr('class', 'grid')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(
+                d3.axisBottom(x)
+                    .tickValues(xTicks)
+                    .tickSize(-(height - margin.top - margin.bottom))
+                    .tickFormat('')
+            );
+
+        svg.append('g')
+            .attr('class', 'grid')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(
+                d3.axisLeft(y)
+                    .ticks(6)
+                    .tickSize(-(width - margin.left - margin.right))
+                    .tickFormat('')
+            );
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(
+                d3.axisBottom(x)
+                    .tickValues(xTicks)
+                    .tickFormat(d3.format('d'))
+            )
+            .selectAll('text')
+            .style('font-size', '11px');
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y).ticks(6));
+
+        svg.append('text')
+            .attr('x', (margin.left + width - margin.right) / 2)
+            .attr('y', height - 12)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#374151')
+            .style('font-size', '14px')
+            .text('Year');
+
+        svg.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -(margin.top + height - margin.bottom) / 2)
+            .attr('y', 18)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#374151')
+            .style('font-size', '14px')
+            .text(getSelectedMetricLabel(metric));
+
+        const line = d3.line()
+            .x(d => x(d.year))
+            .y(d => y(d.value))
+            .curve(d3.curveMonotoneX);
+
+        const seriesGroup = svg.append('g');
+
+        series.forEach(s => {
+            seriesGroup.append('path')
+                .datum(s.values)
+                .attr('fill', 'none')
+                .attr('stroke', s.color)
+                .attr('stroke-width', 2.5)
+                .attr('d', line);
+
+            seriesGroup.selectAll(null)
+                .data(s.values)
+                .enter()
+                .append('circle')
+                .attr('cx', d => x(d.year))
+                .attr('cy', d => y(d.value))
+                .attr('r', 3.5)
+                .attr('fill', s.color)
+                .on('mouseenter', function(event, d) {
+                    tooltip
+                        .style('opacity', 1)
+                        .html(
+                            `<strong>${s.country}</strong><br>Year: ${d.year}<br>${getSelectedMetricLabel(metric)}: ${d.value}`
+                        );
+                })
+                .on('mousemove', function(event) {
+                    const rect = chartEl.getBoundingClientRect();
+                    tooltip
+                        .style('left', `${event.clientX - rect.left}px`)
+                        .style('top', `${event.clientY - rect.top}px`);
+                })
+                .on('mouseleave', function() {
+                    tooltip.style('opacity', 0);
+                });
+        });
+
+        const legend = svg.append('g')
+            .attr('class', 'legend')
+            .attr('transform', `translate(${width - margin.right + 20}, ${margin.top + 10})`);
+
+        series.forEach((s, index) => {
+            const row = legend.append('g')
+                .attr('transform', `translate(0, ${index * 24})`);
+
+            row.append('line')
+                .attr('x1', 0)
+                .attr('x2', 28)
+                .attr('y1', 0)
+                .attr('y2', 0)
+                .attr('stroke', s.color)
+                .attr('stroke-width', 4);
+
+            row.append('text')
+                .attr('x', 36)
+                .attr('y', 0)
+                .text(s.country);
+        });
+    }
+
+    function selectTopCountries() {
+        buildCountryTotals();
+
+        const topCountries = [...countryTotals.entries()]
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .slice(0, 5)
+            .map(([country]) => country);
+
+        selectedCountries = new Set(topCountries);
+        buildCountryList(countrySearchEl.value);
+        renderChart();
+    }
+
+    function clearAllCountries() {
+        selectedCountries.clear();
+        buildCountryList(countrySearchEl.value);
+        renderChart();
+    }
+
+    function handleFilterChange() {
+        buildCountryTotals();
+
+        const availableCountries = new Set(getFilteredRows().map(row => row.Country));
+        selectedCountries = new Set(
+            [...selectedCountries].filter(country => availableCountries.has(country))
+        );
+
+        if (selectedCountries.size === 0 && availableCountries.size > 0) {
+            const fallbackCountries = [...countryTotals.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .slice(0, 5)
+                .map(([country]) => country);
+
+            selectedCountries = new Set(fallbackCountries);
+        }
+
+        buildCountryList(countrySearchEl.value);
+        renderChart();
+    }
+
+    function initializeUI() {
+        parsedRows = parsedRows.map(row => ({
+            ...row,
+            Year: parseNumber(row.Year),
+            Gold: parseNumber(row.Gold),
+            Silver: parseNumber(row.Silver),
+            Bronze: parseNumber(row.Bronze),
+            M_Total: parseNumber(row.M_Total),
+            Season: inferSeason(row)
+        }));
+
+        countries = [...new Set(parsedRows.map(row => row.Country))]
+            .sort((a, b) => a.localeCompare(b));
+
+        buildCountryTotals();
+
+        selectedCountries = new Set(
+            [...countryTotals.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .slice(0, 5)
+                .map(([country]) => country)
+        );
+
+        buildCountryList();
+        renderChart();
+
+        countrySearchEl.addEventListener('input', () => buildCountryList(countrySearchEl.value));
+        metricSelectEl.addEventListener('change', handleFilterChange);
+        seasonSelectEl.addEventListener('change', handleFilterChange);
+        selectTopBtn.addEventListener('click', selectTopCountries);
+        clearBtn.addEventListener('click', clearAllCountries);
+        window.addEventListener('resize', renderChart);
+    }
+
+    function loadCsvAutomatically() {
+        Papa.parse(CSV_FILE, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                parsedRows = (results.data || []).filter(row => row.Country && row.Year);
+
+                if (!parsedRows.length) {
+                    statusEl.textContent = 'CSV loaded, but no usable data rows were found.';
+                    return;
+                }
+
+                initializeUI();
+            },
+            error: () => {
+                statusEl.innerHTML =
+                    `Unable to load <code>${CSV_FILE}</code> automatically. Make sure the CSV file is in the same folder as this HTML file. If you opened the file directly in the browser, start a local server first.`;
+                statusEl.style.background = '#fef2f2';
+                statusEl.style.color = '#b91c1c';
+            }
+        });
+    }
+
+    loadCsvAutomatically();
+</script>
+</body>
+</html>
