@@ -8,14 +8,69 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #1f2937; }
-        .container { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
-        .sidebar { background: #ffffff; border-right: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; }
-        .main { padding: 24px; }
-        h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.2; }
-        .subtitle { margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.6; max-width: 1000px; }
+
+        :root {
+            --sidebar-width: clamp(260px, 24vw, 320px);
+            --main-padding: clamp(16px, 2.2vw, 24px);
+            --page-bg: #f5f7fb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --muted: #4b5563;
+            --border: #e5e7eb;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--page-bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: minmax(260px, var(--sidebar-width)) minmax(0, 1fr);
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            background: #ffffff;
+            border-right: 1px solid var(--border);
+            padding: 16px;
+            overflow-y: auto;
+            min-width: 0;
+        }
+
+        .main {
+            padding: var(--main-padding);
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: clamp(1.7rem, 3vw, 2rem);
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            margin: 0 0 20px;
+            color: var(--muted);
+            font-size: clamp(0.92rem, 1.4vw, 0.96rem);
+            line-height: 1.6;
+            max-width: 1000px;
+        }
+
         .control-group { margin-bottom: 18px; }
-        .label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+
+        .label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
         select {
             width: 100%;
             padding: 10px 12px;
@@ -24,7 +79,14 @@
             font-size: 14px;
             background: #fff;
         }
-        .hint { margin-top: 8px; font-size: 12px; color: #6b7280; line-height: 1.5; }
+
+        .hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
         .status {
             margin-bottom: 14px;
             padding: 12px 14px;
@@ -34,29 +96,39 @@
             font-size: 14px;
             line-height: 1.5;
         }
+
         .chart-wrap {
-            background: #fff;
-            border: 1px solid #e5e7eb;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 20px;
+            padding: clamp(14px, 2vw, 20px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            min-height: 620px;
+            min-height: min(72vh, 620px);
+            width: 100%;
+            overflow: hidden;
         }
+
         #chart {
             width: 100%;
-            min-height: 560px;
+            min-height: clamp(360px, 60vh, 560px);
+            height: clamp(360px, 60vh, 560px);
             position: relative;
+            overflow: hidden;
         }
+
         .footer-note {
             margin-top: 12px;
             font-size: 12px;
             color: #6b7280;
             line-height: 1.6;
+            word-break: break-word;
         }
+
         .axis path, .axis line { stroke: #cfd8e3; }
         .grid line { stroke: #eef2f7; }
         .grid path { display: none; }
         .legend text { fill: #374151; font-size: 13px; dominant-baseline: middle; }
+
         .tooltip {
             position: absolute;
             pointer-events: none;
@@ -71,10 +143,41 @@
             transform: translate(-50%, calc(-100% - 10px));
             white-space: nowrap;
         }
-        .legend-note { margin-top: 10px; font-size: 12px; color: #6b7280; }
+
+        .legend-note {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
         @media (max-width: 900px) {
-            .container { grid-template-columns: 1fr; }
-            .sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; }
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .main, .sidebar {
+                padding: 14px;
+            }
+
+            .chart-wrap {
+                padding: 12px;
+            }
+
+            #chart {
+                min-height: 340px;
+                height: 340px;
+            }
+
+            .status {
+                font-size: 13px;
+            }
         }
     </style>
 </head>
@@ -116,9 +219,9 @@
         </div>
 
         <div class="footer-note">
-            Files used: <code>summer_paralympics.csv</code> and <code>winter_paralympics.csv</code>.<br>
-<!--            Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from-->
-<!--            <code>file://</code>, run a local server first.-->
+            Files used: <code>summer_paralympics.csv</code> and <code>winter_paralympics.csv</code><br>
+            <!--            Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from-->
+            <!--            <code>file://</code>, run a local server first.-->
         </div>
     </main>
 </div>
@@ -226,14 +329,24 @@
             return;
         }
 
-        const width = Math.max(chartEl.clientWidth, 920);
-        const height = 580;
-        const margin = { top: 20, right: 220, bottom: 60, left: 70 };
+        const width = Math.max(chartEl.clientWidth, 320);
+        const height = Math.max(Math.min(window.innerHeight * 0.6, 580), 360);
+
+        const isNarrow = width < 760;
+        const margin = {
+            top: 20,
+            right: isNarrow ? 20 : 220,
+            bottom: 60,
+            left: isNarrow ? 56 : 70
+        };
 
         const svg = d3.select(chartEl)
             .append('svg')
             .attr('width', width)
-            .attr('height', height);
+            .attr('height', height)
+            .style('display', 'block')
+            .style('width', '100%')
+            .style('height', '100%');
 
         const x = d3.scaleLinear()
             .domain([0, d3.max(data, d => d.MedalEfficiency) || 0])
@@ -260,28 +373,32 @@
         svg.append('g')
             .attr('class', 'axis')
             .attr('transform', `translate(0,${height - margin.bottom})`)
-            .call(d3.axisBottom(x).ticks(8));
+            .call(d3.axisBottom(x).ticks(8))
+            .selectAll('text')
+            .style('font-size', isNarrow ? '10px' : '11px');
 
         svg.append('g')
             .attr('class', 'axis')
             .attr('transform', `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(8));
+            .call(d3.axisLeft(y).ticks(8))
+            .selectAll('text')
+            .style('font-size', isNarrow ? '10px' : '11px');
 
         svg.append('text')
             .attr('x', (margin.left + width - margin.right) / 2)
             .attr('y', height - 14)
             .attr('text-anchor', 'middle')
             .attr('fill', '#374151')
-            .style('font-size', '14px')
+            .style('font-size', isNarrow ? '13px' : '14px')
             .text('M_Total / P_Total');
 
         svg.append('text')
             .attr('transform', 'rotate(-90)')
             .attr('x', -(margin.top + height - margin.bottom) / 2)
-            .attr('y', 20)
+            .attr('y', isNarrow ? 16 : 20)
             .attr('text-anchor', 'middle')
             .attr('fill', '#374151')
-            .style('font-size', '14px')
+            .style('font-size', isNarrow ? '13px' : '14px')
             .text('M_Total');
 
         svg.append('g')
@@ -291,7 +408,7 @@
             .append('circle')
             .attr('cx', d => x(d.MedalEfficiency))
             .attr('cy', d => y(d.M_Total))
-            .attr('r', 4.8)
+            .attr('r', isNarrow ? 4 : 4.8)
             .attr('fill', d => seasonColors[d.GamesType])
             .attr('fill-opacity', 0.72)
             .attr('stroke', '#ffffff')
@@ -336,7 +453,10 @@
 
         const legend = svg.append('g')
             .attr('class', 'legend')
-            .attr('transform', `translate(${width - margin.right + 20}, ${margin.top + 20})`);
+            .attr('transform', isNarrow
+                ? `translate(${margin.left}, ${margin.top + 6})`
+                : `translate(${width - margin.right + 20}, ${margin.top + 20})`
+            );
 
         const legendItems = seasonsToDraw.map(season => ({
             label: season,
@@ -351,7 +471,10 @@
 
         legendItems.forEach((item, index) => {
             const row = legend.append('g')
-                .attr('transform', `translate(0, ${index * 28 + 14})`);
+                .attr('transform', isNarrow
+                    ? `translate(${index * 110}, 14)`
+                    : `translate(0, ${index * 28 + 14})`
+                );
 
             row.append('circle')
                 .attr('cx', 7)
@@ -365,15 +488,20 @@
                 .text(item.label);
         });
 
-        const trendLegendTitle = legend.append('text')
+        const baseY = isNarrow ? 44 : legendItems.length * 28 + 28;
+
+        legend.append('text')
             .attr('x', 0)
-            .attr('y', legendItems.length * 28 + 28)
+            .attr('y', baseY)
             .style('font-weight', '700')
             .text('Trend lines');
 
         seasonsToDraw.forEach((season, index) => {
             const row = legend.append('g')
-                .attr('transform', `translate(0, ${legendItems.length * 28 + 48 + index * 24})`);
+                .attr('transform', isNarrow
+                    ? `translate(${index * 135}, ${baseY + 20})`
+                    : `translate(0, ${legendItems.length * 28 + 48 + index * 24})`
+                );
 
             row.append('line')
                 .attr('x1', 0)

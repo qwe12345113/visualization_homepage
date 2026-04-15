@@ -1,125 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Olympics vs Paralympics Small Multiples</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #1f2937; }
-    .container { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
-    .sidebar { background: #ffffff; border-right: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; }
-    .main { padding: 24px; }
-    h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.2; }
-    .subtitle { margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.6; max-width: 1100px; }
-    .control-group { margin-bottom: 18px; }
-    .label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
-    select, input[type="text"] {
-      width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #fff;
-    }
-    .button-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-    button { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 13px; }
-    button:hover { background: #f9fafb; }
-    .hint { margin-top: 8px; font-size: 12px; color: #6b7280; line-height: 1.5; }
-    .country-list {
-      border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; max-height: 58vh; overflow-y: auto;
-    }
-    .country-item {
-      display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 15px;
-    }
-    .country-item:last-child { border-bottom: none; }
-    .status {
-      margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 14px; line-height: 1.5;
-    }
-    .legend-bar {
-      display: flex; gap: 18px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
-      color: #374151; font-size: 14px;
-    }
-    .legend-item { display: flex; align-items: center; gap: 8px; }
-    .legend-line { width: 26px; height: 0; border-top-width: 4px; border-top-style: solid; }
-    .grid-wrap {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px;
-    }
-    .panel {
-      background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px 14px 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    .panel-title {
-      font-size: 16px; font-weight: 700; margin: 0 0 8px; color: #1f2937;
-    }
-    .chart { width: 100%; height: 220px; position: relative; }
-    .axis path, .axis line { stroke: #d1d5db; }
-    .grid line { stroke: #eef2f7; }
-    .grid path { display: none; }
-    .panel-note { margin-top: 6px; font-size: 11px; color: #6b7280; }
-    .tooltip {
-      position: fixed; pointer-events: none; background: rgba(17,24,39,0.94); color: white; padding: 8px 10px; border-radius: 8px;
-      font-size: 12px; line-height: 1.5; box-shadow: 0 6px 20px rgba(0,0,0,0.18); opacity: 0; white-space: nowrap; z-index: 1000;
-    }
-    .footer-note { margin-top: 16px; font-size: 12px; color: #6b7280; line-height: 1.6; }
-    @media (max-width: 900px) {
-      .container { grid-template-columns: 1fr; }
-      .sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; }
-      .country-list { max-height: 260px; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Olympics vs Paralympics Small Multiples</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+
+        :root {
+            --sidebar-width: clamp(260px, 24vw, 320px);
+            --main-padding: clamp(16px, 2.2vw, 24px);
+            --panel-min: minmax(min(100%, 280px), 1fr);
+            --card-bg: #ffffff;
+            --page-bg: #f5f7fb;
+            --text: #1f2937;
+            --muted: #4b5563;
+            --border: #e5e7eb;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--page-bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: minmax(260px, var(--sidebar-width)) minmax(0, 1fr);
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            background: #ffffff;
+            border-right: 1px solid var(--border);
+            padding: 16px;
+            overflow-y: auto;
+            min-width: 0;
+        }
+
+        .main {
+            padding: var(--main-padding);
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: clamp(1.7rem, 3vw, 2rem);
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            margin: 0 0 20px;
+            color: var(--muted);
+            font-size: clamp(0.92rem, 1.4vw, 0.96rem);
+            line-height: 1.6;
+            max-width: 1100px;
+        }
+
+        .control-group { margin-bottom: 18px; }
+
+        .label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        button:hover { background: #f9fafb; }
+
+        .hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .country-list {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            max-height: min(58vh, 460px);
+            overflow-y: auto;
+        }
+
+        .country-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 15px;
+        }
+
+        .country-item:last-child { border-bottom: none; }
+
+        .status {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .legend-bar {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-line { width: 26px; height: 0; border-top-width: 4px; border-top-style: solid; }
+
+        .grid-wrap {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, var(--panel-min));
+            gap: 18px;
+            width: 100%;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 14px 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            min-width: 0;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .chart {
+            width: 100%;
+            height: clamp(210px, 28vw, 250px);
+            position: relative;
+        }
+
+        .axis path, .axis line { stroke: #d1d5db; }
+        .grid line { stroke: #eef2f7; }
+        .grid path { display: none; }
+
+        .panel-note {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .tooltip {
+            position: fixed;
+            pointer-events: none;
+            background: rgba(17,24,39,0.94);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            opacity: 0;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+
+        .footer-note {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .country-list {
+                max-height: 260px;
+            }
+
+            .grid-wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .main, .sidebar {
+                padding: 14px;
+            }
+
+            .legend-bar {
+                gap: 12px;
+                font-size: 13px;
+            }
+
+            .panel {
+                padding: 12px 12px 8px;
+            }
+
+            .chart {
+                height: 220px;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-  <aside class="sidebar">
-    <div class="control-group">
-      <label class="label" for="seasonSelect">Games type</label>
-      <select id="seasonSelect">
-        <option value="Summer" selected>Summer</option>
-        <option value="Winter">Winter</option>
-      </select>
-    </div>
+    <aside class="sidebar">
+        <div class="control-group">
+            <label class="label" for="seasonSelect">Games type</label>
+            <select id="seasonSelect">
+                <option value="Summer" selected>Summer</option>
+                <option value="Winter">Winter</option>
+            </select>
+        </div>
 
-    <div class="control-group">
-      <label class="label" for="countrySearch">Search countries</label>
-      <input id="countrySearch" type="text" placeholder="Type to search a country" />
-    </div>
+        <div class="control-group">
+            <label class="label" for="countrySearch">Search countries</label>
+            <input id="countrySearch" type="text" placeholder="Type to search a country" />
+        </div>
 
-    <div class="control-group">
-      <label class="label">Countries</label>
-      <div class="button-row">
-        <button id="selectTopBtn" type="button">Select top 6</button>
-        <button id="clearBtn" type="button">Clear all</button>
-      </div>
-      <div id="countryList" class="country-list"></div>
-      <div class="hint">
-        Each panel shows one country. Within each panel, the two lines compare Olympics and Paralympics using the same weighted medal score:
-        3 × Gold + 2 × Silver + 1 × Bronze.
-      </div>
-    </div>
-  </aside>
+        <div class="control-group">
+            <label class="label">Countries</label>
+            <div class="button-row">
+                <button id="selectTopBtn" type="button">Select top 6</button>
+                <button id="clearBtn" type="button">Clear all</button>
+            </div>
+            <div id="countryList" class="country-list"></div>
+            <div class="hint">
+                Each panel shows one country. Within each panel, the two lines compare Olympics and Paralympics using the same weighted medal score:
+                3 × Gold + 2 × Silver + 1 × Bronze.
+            </div>
+        </div>
+    </aside>
 
-  <main class="main">
-    <h1>Olympics vs Paralympics: Small-Multiples Comparison</h1>
-    <p class="subtitle">
-      This visualisation is intended to compare how long-term team performance trends differ between the Olympics and the Paralympics.
-      Each small-multiple panel represents one country. Within each panel, two lines are shown: one for Olympic performance and one for
-      Paralympic performance, both measured using the same weighted medal score. Consistent scales across panels support country-to-country comparison.
-    </p>
+    <main class="main">
+        <h1>Olympics vs Paralympics: Small-Multiples Comparison</h1>
+        <p class="subtitle">
+            This visualisation is intended to compare how long-term team performance trends differ between the Olympics and the Paralympics.
+            Each small-multiple panel represents one country. Within each panel, two lines are shown: one for Olympic performance and one for
+            Paralympic performance, both measured using the same weighted medal score. Consistent scales across panels support country-to-country comparison.
+        </p>
 
-    <div id="status" class="status">Loading CSV data...</div>
+        <div id="status" class="status">Loading CSV data...</div>
 
-    <div class="legend-bar">
-      <div class="legend-item"><span class="legend-line" style="border-top-color:#3366CC;"></span><span>Olympics</span></div>
-      <div class="legend-item"><span class="legend-line" style="border-top-color:#DC3912;"></span><span>Paralympics</span></div>
-    </div>
+        <div class="legend-bar">
+            <div class="legend-item"><span class="legend-line" style="border-top-color:#3366CC;"></span><span>Olympics</span></div>
+            <div class="legend-item"><span class="legend-line" style="border-top-color:#DC3912;"></span><span>Paralympics</span></div>
+        </div>
 
-    <div id="panelGrid" class="grid-wrap"></div>
+        <div id="panelGrid" class="grid-wrap"></div>
 
-    <div class="footer-note">
-      Files used: <code>olympic_results_in_winter_paralympics_format_with_mixed.csv</code>,
-      <code>summer_paralympics.csv</code>, and <code>winter_paralympics.csv</code>.<br>
-<!--      Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from-->
-<!--      <code>file://</code>, run a local server first.-->
-    </div>
-  </main>
+        <div class="footer-note">
+            Files used: <code>olympic_results_in_winter_paralympics_format_with_mixed.csv</code>,
+            <code>summer_paralympics.csv</code>, and <code>winter_paralympics.csv</code>.
+        </div>
+    </main>
 </div>
 
 <div id="tooltip" class="tooltip"></div>
@@ -129,376 +312,391 @@
     const SUMMER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/summer_paralympics.csv';
     const WINTER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/winter_paralympics.csv';
 
-
     const WINTER_GAME_KEYS = new Set([
-    '1924|Chamonix|France','1928|St Moritz|Switzerland','1932|Lake Placid|United States',
-    '1936|Garmisch Partenkirchen|Germany','1948|St Moritz|Switzerland','1952|Oslo|Norway',
-    '1956|Cortina D Ampezzo|Italy','1960|Squaw Valley|United States','1964|Innsbruck|Austria',
-    '1968|Grenoble|France','1972|Sapporo|Japan','1976|Innsbruck|Austria','1980|Lake Placid|United States',
-    '1984|Sarajevo|Yugoslavia','1988|Calgary|Canada','1992|Albertville|France','1994|Lillehammer|Norway',
-    '1998|Nagano|Japan','2002|Salt Lake City|United States','2006|Turin|Italy','2010|Vancouver|Canada',
-    '2014|Sochi|Russian Federation','2018|Pyeongchang|Republic of Korea','2022|Beijing|China'
-  ]);
+        '1924|Chamonix|France','1928|St Moritz|Switzerland','1932|Lake Placid|United States',
+        '1936|Garmisch Partenkirchen|Germany','1948|St Moritz|Switzerland','1952|Oslo|Norway',
+        '1956|Cortina D Ampezzo|Italy','1960|Squaw Valley|United States','1964|Innsbruck|Austria',
+        '1968|Grenoble|France','1972|Sapporo|Japan','1976|Innsbruck|Austria','1980|Lake Placid|United States',
+        '1984|Sarajevo|Yugoslavia','1988|Calgary|Canada','1992|Albertville|France','1994|Lillehammer|Norway',
+        '1998|Nagano|Japan','2002|Salt Lake City|United States','2006|Turin|Italy','2010|Vancouver|Canada',
+        '2014|Sochi|Russian Federation','2018|Pyeongchang|Republic of Korea','2022|Beijing|China'
+    ]);
 
-  const seasonSelectEl = document.getElementById('seasonSelect');
-  const countrySearchEl = document.getElementById('countrySearch');
-  const countryListEl = document.getElementById('countryList');
-  const selectTopBtn = document.getElementById('selectTopBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const statusEl = document.getElementById('status');
-  const panelGridEl = document.getElementById('panelGrid');
-  const tooltipEl = document.getElementById('tooltip');
+    const seasonSelectEl = document.getElementById('seasonSelect');
+    const countrySearchEl = document.getElementById('countrySearch');
+    const countryListEl = document.getElementById('countryList');
+    const selectTopBtn = document.getElementById('selectTopBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusEl = document.getElementById('status');
+    const panelGridEl = document.getElementById('panelGrid');
+    const tooltipEl = document.getElementById('tooltip');
 
-  const state = {
-    olympicsRows: [],
-    paralympicsRows: [],
-    countries: [],
-    selectedCountries: new Set()
-  };
-
-  function parseNumber(value) {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  }
-
-  function inferOlympicSeason(year, city, country) {
-    const key = `${year}|${city}|${country}`;
-    return WINTER_GAME_KEYS.has(key) ? 'Winter' : 'Summer';
-  }
-
-  function weightedScore(gold, silver, bronze) {
-    return 3 * parseNumber(gold) + 2 * parseNumber(silver) + 1 * parseNumber(bronze);
-  }
-
-  function currentSeasonRows() {
-    const season = seasonSelectEl.value;
-    return {
-      olympics: state.olympicsRows.filter(row => row.Season === season),
-      paralympics: state.paralympicsRows.filter(row => row.Season === season)
+    const state = {
+        olympicsRows: [],
+        paralympicsRows: [],
+        countries: [],
+        selectedCountries: new Set()
     };
-  }
 
-  function computeCombinedTotals() {
-    const { olympics, paralympics } = currentSeasonRows();
-    const totals = new Map();
-    [...olympics, ...paralympics].forEach(row => {
-      totals.set(row.Country, (totals.get(row.Country) || 0) + row.WeightedScore);
-    });
-    return totals;
-  }
-
-  function getDisplayCountries(searchTerm = '') {
-    const totals = computeCombinedTotals();
-    const keyword = searchTerm.trim().toLowerCase();
-    return state.countries
-      .filter(country => totals.has(country))
-      .filter(country => country.toLowerCase().includes(keyword))
-      .sort((a, b) => {
-        const diff = (totals.get(b) || 0) - (totals.get(a) || 0);
-        return diff !== 0 ? diff : a.localeCompare(b);
-      });
-  }
-
-  function buildCountryList() {
-    const totals = computeCombinedTotals();
-    const displayCountries = getDisplayCountries(countrySearchEl.value);
-
-    countryListEl.innerHTML = '';
-
-    if (!displayCountries.length) {
-      countryListEl.innerHTML = '<div class="country-item">No countries match the current filter.</div>';
-      return;
+    function parseNumber(value) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
     }
 
-    displayCountries.forEach(country => {
-      const item = document.createElement('label');
-      item.className = 'country-item';
+    function inferOlympicSeason(year, city, country) {
+        const key = `${year}|${city}|${country}`;
+        return WINTER_GAME_KEYS.has(key) ? 'Winter' : 'Summer';
+    }
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = state.selectedCountries.has(country);
-      checkbox.addEventListener('change', () => {
-        if (checkbox.checked) state.selectedCountries.add(country);
-        else state.selectedCountries.delete(country);
+    function weightedScore(gold, silver, bronze) {
+        return 3 * parseNumber(gold) + 2 * parseNumber(silver) + 1 * parseNumber(bronze);
+    }
+
+    function currentSeasonRows() {
+        const season = seasonSelectEl.value;
+        return {
+            olympics: state.olympicsRows.filter(row => row.Season === season),
+            paralympics: state.paralympicsRows.filter(row => row.Season === season)
+        };
+    }
+
+    function computeCombinedTotals() {
+        const { olympics, paralympics } = currentSeasonRows();
+        const totals = new Map();
+        [...olympics, ...paralympics].forEach(row => {
+            totals.set(row.Country, (totals.get(row.Country) || 0) + row.WeightedScore);
+        });
+        return totals;
+    }
+
+    function getDisplayCountries(searchTerm = '') {
+        const totals = computeCombinedTotals();
+        const keyword = searchTerm.trim().toLowerCase();
+        return state.countries
+            .filter(country => totals.has(country))
+            .filter(country => country.toLowerCase().includes(keyword))
+            .sort((a, b) => {
+                const diff = (totals.get(b) || 0) - (totals.get(a) || 0);
+                return diff !== 0 ? diff : a.localeCompare(b);
+            });
+    }
+
+    function buildCountryList() {
+        const totals = computeCombinedTotals();
+        const displayCountries = getDisplayCountries(countrySearchEl.value);
+
+        countryListEl.innerHTML = '';
+
+        if (!displayCountries.length) {
+            countryListEl.innerHTML = '<div class="country-item">No countries match the current filter.</div>';
+            return;
+        }
+
+        displayCountries.forEach(country => {
+            const item = document.createElement('label');
+            item.className = 'country-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = state.selectedCountries.has(country);
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) state.selectedCountries.add(country);
+                else state.selectedCountries.delete(country);
+                renderPanels();
+            });
+
+            const text = document.createElement('span');
+            text.textContent = `${country} (${totals.get(country) || 0})`;
+
+            item.appendChild(checkbox);
+            item.appendChild(text);
+            countryListEl.appendChild(item);
+        });
+    }
+
+    function selectTopCountries(count = 6) {
+        const totals = computeCombinedTotals();
+        const topCountries = Array.from(totals.entries())
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .slice(0, count)
+            .map(([country]) => country);
+
+        state.selectedCountries = new Set(topCountries);
+        buildCountryList();
         renderPanels();
-      });
-
-      const text = document.createElement('span');
-      text.textContent = `${country} (${totals.get(country) || 0})`;
-
-      item.appendChild(checkbox);
-      item.appendChild(text);
-      countryListEl.appendChild(item);
-    });
-  }
-
-  function selectTopCountries(count = 6) {
-    const totals = computeCombinedTotals();
-    const topCountries = Array.from(totals.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .slice(0, count)
-      .map(([country]) => country);
-
-    state.selectedCountries = new Set(topCountries);
-    buildCountryList();
-    renderPanels();
-  }
-
-  function panelDataForCountry(country) {
-    const { olympics, paralympics } = currentSeasonRows();
-
-    const olympicValues = olympics
-      .filter(row => row.Country === country)
-      .sort((a, b) => a.Year - b.Year)
-      .map(row => ({ year: row.Year, value: row.WeightedScore, system: 'Olympics' }));
-
-    const paralympicValues = paralympics
-      .filter(row => row.Country === country)
-      .sort((a, b) => a.Year - b.Year)
-      .map(row => ({ year: row.Year, value: row.WeightedScore, system: 'Paralympics' }));
-
-    return {
-      country,
-      olympicValues,
-      paralympicValues
-    };
-  }
-
-  function getReadableYearTicks(yearExtent) {
-    const [minYear, maxYear] = yearExtent;
-    const span = maxYear - minYear;
-    let step = 4;
-    if (span > 80) step = 16;
-    else if (span > 50) step = 12;
-    else if (span > 30) step = 8;
-    const tickStart = Math.ceil(minYear / step) * step;
-    return d3.range(tickStart, maxYear + 1, step);
-  }
-
-  function showTooltip(html, event) {
-    tooltipEl.innerHTML = html;
-    tooltipEl.style.opacity = '1';
-    tooltipEl.style.left = `${event.clientX + 12}px`;
-    tooltipEl.style.top = `${event.clientY - 8}px`;
-  }
-
-  function hideTooltip() {
-    tooltipEl.style.opacity = '0';
-  }
-
-  function renderPanels() {
-    const selected = getDisplayCountries('').filter(country => state.selectedCountries.has(country));
-    const panelData = selected.map(panelDataForCountry);
-
-    const allValues = panelData.flatMap(panel => [...panel.olympicValues, ...panel.paralympicValues]);
-    const yearExtent = d3.extent(allValues, d => d.year);
-    const globalMaxY = d3.max(allValues, d => d.value) || 0;
-
-    statusEl.textContent = `${seasonSelectEl.value} | Weighted medal score | ${selected.length} countr${selected.length === 1 ? 'y' : 'ies'} selected`;
-
-    panelGridEl.innerHTML = '';
-
-    if (!selected.length || !allValues.length) {
-      panelGridEl.innerHTML = '<div class="panel"><div class="panel-title">No panels to display</div><div class="panel-note">Select at least one country with available data.</div></div>';
-      return;
     }
 
-    panelData.forEach(panel => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'panel';
+    function panelDataForCountry(country) {
+        const { olympics, paralympics } = currentSeasonRows();
 
-      const title = document.createElement('div');
-      title.className = 'panel-title';
-      title.textContent = panel.country;
-      wrapper.appendChild(title);
+        const olympicValues = olympics
+            .filter(row => row.Country === country)
+            .sort((a, b) => a.Year - b.Year)
+            .map(row => ({ year: row.Year, value: row.WeightedScore, system: 'Olympics' }));
 
-      const chartDiv = document.createElement('div');
-      chartDiv.className = 'chart';
-      wrapper.appendChild(chartDiv);
+        const paralympicValues = paralympics
+            .filter(row => row.Country === country)
+            .sort((a, b) => a.Year - b.Year)
+            .map(row => ({ year: row.Year, value: row.WeightedScore, system: 'Paralympics' }));
 
-      const note = document.createElement('div');
-      note.className = 'panel-note';
-      note.textContent = 'Shared y-scale across panels for comparison';
-      wrapper.appendChild(note);
-
-      panelGridEl.appendChild(wrapper);
-
-      const width = 300;
-      const height = 210;
-      const margin = { top: 10, right: 10, bottom: 30, left: 42 };
-
-      const svg = d3.select(chartDiv).append('svg').attr('width', width).attr('height', height);
-
-      const x = d3.scaleLinear().domain(yearExtent).range([margin.left, width - margin.right]);
-      const y = d3.scaleLinear().domain([0, globalMaxY]).nice().range([height - margin.bottom, margin.top]);
-
-      const xTicks = getReadableYearTicks(yearExtent);
-
-      svg.append('g')
-        .attr('class', 'grid')
-        .attr('transform', `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x).tickValues(xTicks).tickSize(-(height - margin.top - margin.bottom)).tickFormat(''));
-
-      svg.append('g')
-        .attr('class', 'grid')
-        .attr('transform', `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y).ticks(4).tickSize(-(width - margin.left - margin.right)).tickFormat(''));
-
-      svg.append('g')
-        .attr('class', 'axis')
-        .attr('transform', `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format('d')))
-        .selectAll('text')
-        .style('font-size', '9px');
-
-      svg.append('g')
-        .attr('class', 'axis')
-        .attr('transform', `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y).ticks(4))
-        .selectAll('text')
-        .style('font-size', '9px');
-
-      const line = d3.line().x(d => x(d.year)).y(d => y(d.value)).curve(d3.curveLinear);
-
-      if (panel.olympicValues.length) {
-        svg.append('path')
-          .datum(panel.olympicValues)
-          .attr('fill', 'none')
-          .attr('stroke', '#3366CC')
-          .attr('stroke-width', 2.5)
-          .attr('d', line);
-
-        svg.append('g')
-          .selectAll('circle')
-          .data(panel.olympicValues)
-          .enter()
-          .append('circle')
-          .attr('cx', d => x(d.year))
-          .attr('cy', d => y(d.value))
-          .attr('r', 3)
-          .attr('fill', '#3366CC')
-          .on('mouseenter', function(event, d) {
-            showTooltip(`<strong>${panel.country}</strong><br>System: Olympics<br>Year: ${d.year}<br>Weighted score: ${d.value}`, event);
-          })
-          .on('mousemove', function(event) {
-            tooltipEl.style.left = `${event.clientX + 12}px`;
-            tooltipEl.style.top = `${event.clientY - 8}px`;
-          })
-          .on('mouseleave', hideTooltip);
-      }
-
-      if (panel.paralympicValues.length) {
-        svg.append('path')
-          .datum(panel.paralympicValues)
-          .attr('fill', 'none')
-          .attr('stroke', '#DC3912')
-          .attr('stroke-width', 2.5)
-          .attr('d', line);
-
-        svg.append('g')
-          .selectAll('circle')
-          .data(panel.paralympicValues)
-          .enter()
-          .append('circle')
-          .attr('cx', d => x(d.year))
-          .attr('cy', d => y(d.value))
-          .attr('r', 3)
-          .attr('fill', '#DC3912')
-          .on('mouseenter', function(event, d) {
-            showTooltip(`<strong>${panel.country}</strong><br>System: Paralympics<br>Year: ${d.year}<br>Weighted score: ${d.value}`, event);
-          })
-          .on('mousemove', function(event) {
-            tooltipEl.style.left = `${event.clientX + 12}px`;
-            tooltipEl.style.top = `${event.clientY - 8}px`;
-          })
-          .on('mouseleave', hideTooltip);
-      }
-    });
-  }
-
-  function handleFilterChange() {
-    const available = new Set(getDisplayCountries('').map(c => c));
-    state.selectedCountries = new Set([...state.selectedCountries].filter(c => available.has(c)));
-    if (state.selectedCountries.size === 0 && available.size > 0) {
-      selectTopCountries(6);
-      return;
+        return { country, olympicValues, paralympicValues };
     }
-    buildCountryList();
-    renderPanels();
-  }
 
-  function init() {
-    Promise.all([
-      new Promise((resolve, reject) => {
-        Papa.parse(OLYMPIC_CSV, {
-          download: true, header: true, skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              const parsed = (results.data || []).map(row => ({
-                Country: row.Country,
-                Year: parseNumber(row.Year),
-                WeightedScore: weightedScore(row.Gold, row.Silver, row.Bronze),
-                Season: inferOlympicSeason(parseNumber(row.Year), row.Host_City, row.Host_Country)
-              })).filter(row => row.Country && row.Year > 0);
-              resolve(parsed);
-            } catch (e) { reject(e); }
-          },
-          error: reject
-        });
-      }),
-      new Promise((resolve, reject) => {
-        Papa.parse(SUMMER_PARALYMPIC_CSV, {
-          download: true, header: true, skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              const parsed = (results.data || []).map(row => ({
-                Country: row.Country,
-                Year: parseNumber(row.Year),
-                WeightedScore: weightedScore(row.Gold, row.Silver, row.Bronze),
-                Season: 'Summer'
-              })).filter(row => row.Country && row.Year > 0);
-              resolve(parsed);
-            } catch (e) { reject(e); }
-          },
-          error: reject
-        });
-      }),
-      new Promise((resolve, reject) => {
-        Papa.parse(WINTER_PARALYMPIC_CSV, {
-          download: true, header: true, skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              const parsed = (results.data || []).map(row => ({
-                Country: row.Country,
-                Year: parseNumber(row.Year),
-                WeightedScore: weightedScore(row.Gold, row.Silver, row.Bronze),
-                Season: 'Winter'
-              })).filter(row => row.Country && row.Year > 0);
-              resolve(parsed);
-            } catch (e) { reject(e); }
-          },
-          error: reject
-        });
-      })
-    ]).then(([olympics, paraSummer, paraWinter]) => {
-      state.olympicsRows = olympics;
-      state.paralympicsRows = [...paraSummer, ...paraWinter];
-      state.countries = Array.from(new Set([...state.olympicsRows, ...state.paralympicsRows].map(r => r.Country))).sort((a, b) => a.localeCompare(b));
+    function getReadableYearTicks(yearExtent) {
+        const [minYear, maxYear] = yearExtent;
+        const span = maxYear - minYear;
+        let step = 4;
+        if (span > 80) step = 16;
+        else if (span > 50) step = 12;
+        else if (span > 30) step = 8;
+        const tickStart = Math.ceil(minYear / step) * step;
+        return d3.range(tickStart, maxYear + 1, step);
+    }
 
-      selectTopCountries(6);
-      seasonSelectEl.addEventListener('change', handleFilterChange);
-      countrySearchEl.addEventListener('input', buildCountryList);
-      selectTopBtn.addEventListener('click', () => selectTopCountries(6));
-      clearBtn.addEventListener('click', () => { state.selectedCountries.clear(); buildCountryList(); renderPanels(); });
-      window.addEventListener('resize', renderPanels);
-    }).catch(() => {
-      statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
-      statusEl.style.background = '#fef2f2';
-      statusEl.style.color = '#b91c1c';
-    });
-  }
+    function showTooltip(html, event) {
+        tooltipEl.innerHTML = html;
+        tooltipEl.style.opacity = '1';
+        tooltipEl.style.left = `${event.clientX + 12}px`;
+        tooltipEl.style.top = `${event.clientY - 8}px`;
+    }
 
-  init();
+    function hideTooltip() {
+        tooltipEl.style.opacity = '0';
+    }
+
+    function renderPanels() {
+        const selected = getDisplayCountries('').filter(country => state.selectedCountries.has(country));
+        const panelData = selected.map(panelDataForCountry);
+
+        const allValues = panelData.flatMap(panel => [...panel.olympicValues, ...panel.paralympicValues]);
+        const yearExtent = d3.extent(allValues, d => d.year);
+        const globalMaxY = d3.max(allValues, d => d.value) || 0;
+
+        statusEl.textContent = `${seasonSelectEl.value} | Weighted medal score | ${selected.length} countr${selected.length === 1 ? 'y' : 'ies'} selected`;
+
+        panelGridEl.innerHTML = '';
+
+        if (!selected.length || !allValues.length) {
+            panelGridEl.innerHTML = '<div class="panel"><div class="panel-title">No panels to display</div><div class="panel-note">Select at least one country with available data.</div></div>';
+            return;
+        }
+
+        panelData.forEach(panel => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'panel';
+
+            const title = document.createElement('div');
+            title.className = 'panel-title';
+            title.textContent = panel.country;
+            wrapper.appendChild(title);
+
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'chart';
+            wrapper.appendChild(chartDiv);
+
+            const note = document.createElement('div');
+            note.className = 'panel-note';
+            note.textContent = 'Shared y-scale across panels for comparison';
+            wrapper.appendChild(note);
+
+            panelGridEl.appendChild(wrapper);
+
+            const chartWidth = Math.max(chartDiv.clientWidth, 240);
+            const width = chartWidth;
+            const height = Math.max(chartDiv.clientHeight, 210);
+            const margin = { top: 10, right: 10, bottom: 30, left: 42 };
+
+            const svg = d3.select(chartDiv)
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .style('display', 'block')
+                .style('width', '100%')
+                .style('height', '100%');
+
+            const x = d3.scaleLinear()
+                .domain(yearExtent)
+                .range([margin.left, width - margin.right]);
+
+            const y = d3.scaleLinear()
+                .domain([0, globalMaxY])
+                .nice()
+                .range([height - margin.bottom, margin.top]);
+
+            const xTicks = getReadableYearTicks(yearExtent);
+
+            svg.append('g')
+                .attr('class', 'grid')
+                .attr('transform', `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).tickValues(xTicks).tickSize(-(height - margin.top - margin.bottom)).tickFormat(''));
+
+            svg.append('g')
+                .attr('class', 'grid')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y).ticks(4).tickSize(-(width - margin.left - margin.right)).tickFormat(''));
+
+            svg.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format('d')))
+                .selectAll('text')
+                .style('font-size', width < 300 ? '8px' : '9px');
+
+            svg.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y).ticks(4))
+                .selectAll('text')
+                .style('font-size', width < 300 ? '8px' : '9px');
+
+            const line = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d.value))
+                .curve(d3.curveLinear);
+
+            if (panel.olympicValues.length) {
+                svg.append('path')
+                    .datum(panel.olympicValues)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#3366CC')
+                    .attr('stroke-width', 2.5)
+                    .attr('d', line);
+
+                svg.append('g')
+                    .selectAll('circle')
+                    .data(panel.olympicValues)
+                    .enter()
+                    .append('circle')
+                    .attr('cx', d => x(d.year))
+                    .attr('cy', d => y(d.value))
+                    .attr('r', 3)
+                    .attr('fill', '#3366CC')
+                    .on('mouseenter', function(event, d) {
+                        showTooltip(`<strong>${panel.country}</strong><br>System: Olympics<br>Year: ${d.year}<br>Weighted score: ${d.value}`, event);
+                    })
+                    .on('mousemove', function(event) {
+                        tooltipEl.style.left = `${event.clientX + 12}px`;
+                        tooltipEl.style.top = `${event.clientY - 8}px`;
+                    })
+                    .on('mouseleave', hideTooltip);
+            }
+
+            if (panel.paralympicValues.length) {
+                svg.append('path')
+                    .datum(panel.paralympicValues)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#DC3912')
+                    .attr('stroke-width', 2.5)
+                    .attr('d', line);
+
+                svg.append('g')
+                    .selectAll('circle')
+                    .data(panel.paralympicValues)
+                    .enter()
+                    .append('circle')
+                    .attr('cx', d => x(d.year))
+                    .attr('cy', d => y(d.value))
+                    .attr('r', 3)
+                    .attr('fill', '#DC3912')
+                    .on('mouseenter', function(event, d) {
+                        showTooltip(`<strong>${panel.country}</strong><br>System: Paralympics<br>Year: ${d.year}<br>Weighted score: ${d.value}`, event);
+                    })
+                    .on('mousemove', function(event) {
+                        tooltipEl.style.left = `${event.clientX + 12}px`;
+                        tooltipEl.style.top = `${event.clientY - 8}px`;
+                    })
+                    .on('mouseleave', hideTooltip);
+            }
+        });
+    }
+
+    function handleFilterChange() {
+        const available = new Set(getDisplayCountries('').map(c => c));
+        state.selectedCountries = new Set([...state.selectedCountries].filter(c => available.has(c)));
+        if (state.selectedCountries.size === 0 && available.size > 0) {
+            selectTopCountries(6);
+            return;
+        }
+        buildCountryList();
+        renderPanels();
+    }
+
+    function init() {
+        Promise.all([
+            new Promise((resolve, reject) => {
+                Papa.parse(OLYMPIC_CSV, {
+                    download: true, header: true, skipEmptyLines: true,
+                    complete: (results) => {
+                        try {
+                            const parsed = (results.data || []).map(row => ({
+                                Country: row.Country,
+                                Year: parseNumber(row.Year),
+                                WeightedScore: weightedScore(row.Gold, row.Silver, row.Bronze),
+                                Season: inferOlympicSeason(parseNumber(row.Year), row.Host_City, row.Host_Country)
+                            })).filter(row => row.Country && row.Year > 0);
+                            resolve(parsed);
+                        } catch (e) { reject(e); }
+                    },
+                    error: reject
+                });
+            }),
+            new Promise((resolve, reject) => {
+                Papa.parse(SUMMER_PARALYMPIC_CSV, {
+                    download: true, header: true, skipEmptyLines: true,
+                    complete: (results) => {
+                        try {
+                            const parsed = (results.data || []).map(row => ({
+                                Country: row.Country,
+                                Year: parseNumber(row.Year),
+                                WeightedScore: weightedScore(row.Gold, row.Silver, row.Bronze),
+                                Season: 'Summer'
+                            })).filter(row => row.Country && row.Year > 0);
+                            resolve(parsed);
+                        } catch (e) { reject(e); }
+                    },
+                    error: reject
+                });
+            }),
+            new Promise((resolve, reject) => {
+                Papa.parse(WINTER_PARALYMPIC_CSV, {
+                    download: true, header: true, skipEmptyLines: true,
+                    complete: (results) => {
+                        try {
+                            const parsed = (results.data || []).map(row => ({
+                                Country: row.Country,
+                                Year: parseNumber(row.Year),
+                                WeightedScore: weightedScore(row.Gold, row.Silver, row.Bronze),
+                                Season: 'Winter'
+                            })).filter(row => row.Country && row.Year > 0);
+                            resolve(parsed);
+                        } catch (e) { reject(e); }
+                    },
+                    error: reject
+                });
+            })
+        ]).then(([olympics, paraSummer, paraWinter]) => {
+            state.olympicsRows = olympics;
+            state.paralympicsRows = [...paraSummer, ...paraWinter];
+            state.countries = Array.from(new Set([...state.olympicsRows, ...state.paralympicsRows].map(r => r.Country))).sort((a, b) => a.localeCompare(b));
+
+            selectTopCountries(6);
+            seasonSelectEl.addEventListener('change', handleFilterChange);
+            countrySearchEl.addEventListener('input', buildCountryList);
+            selectTopBtn.addEventListener('click', () => selectTopCountries(6));
+            clearBtn.addEventListener('click', () => {
+                state.selectedCountries.clear();
+                buildCountryList();
+                renderPanels();
+            });
+            window.addEventListener('resize', renderPanels);
+        }).catch(() => {
+            statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
+            statusEl.style.background = '#fef2f2';
+            statusEl.style.color = '#b91c1c';
+        });
+    }
+
+    init();
 </script>
 </body>
 </html>

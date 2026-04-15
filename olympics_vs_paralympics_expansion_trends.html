@@ -8,28 +8,170 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #1f2937; }
-        .container { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
-        .sidebar { background: #ffffff; border-right: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; }
-        .main { padding: 24px; }
-        h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.2; }
-        .subtitle { margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.6; max-width: 1000px; }
+
+        :root {
+            --sidebar-width: clamp(260px, 24vw, 320px);
+            --main-padding: clamp(16px, 2.2vw, 24px);
+            --page-bg: #f5f7fb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --muted: #4b5563;
+            --border: #e5e7eb;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--page-bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: minmax(260px, var(--sidebar-width)) minmax(0, 1fr);
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            background: #ffffff;
+            border-right: 1px solid var(--border);
+            padding: 16px;
+            overflow-y: auto;
+            min-width: 0;
+        }
+
+        .main {
+            padding: var(--main-padding);
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: clamp(1.7rem, 3vw, 2rem);
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            margin: 0 0 20px;
+            color: var(--muted);
+            font-size: clamp(0.92rem, 1.4vw, 0.96rem);
+            line-height: 1.6;
+            max-width: 1000px;
+        }
+
         .control-group { margin-bottom: 18px; }
-        .label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
-        select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #fff; }
-        .hint { margin-top: 8px; font-size: 12px; color: #6b7280; line-height: 1.5; }
-        .status { margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 14px; line-height: 1.5; }
-        .chart-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-height: 560px; }
-        #chart { width: 100%; min-height: 520px; position: relative; }
-        .footer-note { margin-top: 12px; font-size: 12px; color: #6b7280; line-height: 1.6; }
+
+        .label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .status {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .chart-wrap {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: clamp(14px, 2vw, 20px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            min-height: min(70vh, 560px);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #chart {
+            width: 100%;
+            min-height: clamp(360px, 58vh, 520px);
+            height: clamp(360px, 58vh, 520px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer-note {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
         .axis path, .axis line { stroke: #cfd8e3; }
         .grid line { stroke: #eef2f7; }
         .grid path { display: none; }
         .legend text { fill: #374151; font-size: 14px; dominant-baseline: middle; }
-        .tooltip { position: absolute; pointer-events: none; background: rgba(17, 24, 39, 0.94); color: white; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 6px 20px rgba(0,0,0,0.18); opacity: 0; transform: translate(-50%, calc(-100% - 10px)); white-space: nowrap; }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(17, 24, 39, 0.94);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            opacity: 0;
+            transform: translate(-50%, calc(-100% - 10px));
+            white-space: nowrap;
+        }
+
         @media (max-width: 900px) {
-            .container { grid-template-columns: 1fr; }
-            .sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; }
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .main, .sidebar {
+                padding: 14px;
+            }
+
+            .chart-wrap {
+                padding: 12px;
+            }
+
+            #chart {
+                min-height: 340px;
+                height: 340px;
+            }
+
+            .status {
+                font-size: 13px;
+            }
         }
     </style>
 </head>
@@ -74,9 +216,9 @@
 
         <div class="footer-note">
             Files used: <code>olympic_results_in_winter_paralympics_format_with_mixed.csv</code>,
-            <code>summer_paralympics.csv</code>, and <code>winter_paralympics.csv</code>.<br>
-<!--            Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from-->
-<!--            <code>file://</code>, run a local server first.-->
+            <code>summer_paralympics.csv</code>, and <code>winter_paralympics.csv</code><br>
+            <!--            Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from-->
+            <!--            <code>file://</code>, run a local server first.-->
         </div>
     </main>
 </div>
@@ -85,7 +227,6 @@
     const OLYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/olympic_results_in_winter_paralympics_format_with_mixed.csv';
     const SUMMER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/summer_paralympics.csv';
     const WINTER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/winter_paralympics.csv';
-
 
     const WINTER_GAME_KEYS = new Set([
         '1924|Chamonix|France',
@@ -233,58 +374,93 @@
             return;
         }
 
-        const width = Math.max(chartEl.clientWidth, 820);
-        const height = 540;
-        const margin = { top: 20, right: 200, bottom: 55, left: 80 };
+        const width = Math.max(chartEl.clientWidth, 320);
+        const height = Math.max(Math.min(window.innerHeight * 0.58, 540), 360);
 
-        const svg = d3.select(chartEl).append('svg').attr('width', width).attr('height', height);
+        const isNarrow = width < 760;
+        const margin = {
+            top: 20,
+            right: isNarrow ? 20 : 200,
+            bottom: 55,
+            left: isNarrow ? 56 : 80
+        };
 
-        const x = d3.scaleLinear().domain(yearExtent).range([margin.left, width - margin.right]);
+        const svg = d3.select(chartEl)
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height)
+            .style('display', 'block')
+            .style('width', '100%')
+            .style('height', '100%');
+
+        const x = d3.scaleLinear()
+            .domain(yearExtent)
+            .range([margin.left, width - margin.right]);
+
         const maxY = d3.max(allValues, d => d.value) || 0;
-        const y = d3.scaleLinear().domain([0, maxY]).nice().range([height - margin.bottom, margin.top]);
+        const y = d3.scaleLinear()
+            .domain([0, maxY])
+            .nice()
+            .range([height - margin.bottom, margin.top]);
 
         const xTicks = getReadableYearTicks(yearExtent);
 
         svg.append('g')
             .attr('class', 'grid')
             .attr('transform', `translate(0,${height - margin.bottom})`)
-            .call(d3.axisBottom(x).tickValues(xTicks).tickSize(-(height - margin.top - margin.bottom)).tickFormat(''));
+            .call(
+                d3.axisBottom(x)
+                    .tickValues(xTicks)
+                    .tickSize(-(height - margin.top - margin.bottom))
+                    .tickFormat('')
+            );
 
         svg.append('g')
             .attr('class', 'grid')
             .attr('transform', `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(6).tickSize(-(width - margin.left - margin.right)).tickFormat(''));
+            .call(
+                d3.axisLeft(y)
+                    .ticks(6)
+                    .tickSize(-(width - margin.left - margin.right))
+                    .tickFormat('')
+            );
 
         svg.append('g')
             .attr('class', 'axis')
             .attr('transform', `translate(0,${height - margin.bottom})`)
             .call(d3.axisBottom(x).tickValues(xTicks).tickFormat(d3.format('d')))
             .selectAll('text')
-            .style('font-size', '11px');
+            .style('font-size', isNarrow ? '10px' : '11px');
 
         svg.append('g')
             .attr('class', 'axis')
             .attr('transform', `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(6));
+            .call(d3.axisLeft(y).ticks(6))
+            .selectAll('text')
+            .style('font-size', isNarrow ? '10px' : '11px');
 
         svg.append('text')
             .attr('x', (margin.left + width - margin.right) / 2)
             .attr('y', height - 12)
             .attr('text-anchor', 'middle')
             .attr('fill', '#374151')
-            .style('font-size', '14px')
+            .style('font-size', isNarrow ? '13px' : '14px')
             .text('Year');
 
         svg.append('text')
             .attr('transform', 'rotate(-90)')
             .attr('x', -(margin.top + height - margin.bottom) / 2)
-            .attr('y', 18)
+            .attr('y', isNarrow ? 16 : 18)
             .attr('text-anchor', 'middle')
             .attr('fill', '#374151')
-            .style('font-size', '14px')
+            .style('font-size', isNarrow ? '13px' : '14px')
             .text(getMeasureLabel());
 
-        const line = d3.line().x(d => x(d.year)).y(d => y(d.value)).curve(d3.curveLinear);
+        const line = d3.line()
+            .x(d => x(d.year))
+            .y(d => y(d.value))
+            .curve(d3.curveLinear);
+
         const seriesGroup = svg.append('g');
 
         series.forEach(s => {
@@ -301,7 +477,7 @@
                 .append('circle')
                 .attr('cx', d => x(d.year))
                 .attr('cy', d => y(d.value))
-                .attr('r', 4)
+                .attr('r', isNarrow ? 3.5 : 4)
                 .attr('fill', s.color)
                 .on('mouseenter', function(event, d) {
                     tooltip.style('opacity', 1).html(`<strong>${s.label}</strong><br>Year: ${d.year}<br>${getMeasureLabel()}: ${d.value}`);
@@ -317,12 +493,30 @@
 
         const legend = svg.append('g')
             .attr('class', 'legend')
-            .attr('transform', `translate(${width - margin.right + 20}, ${margin.top + 20})`);
+            .attr('transform', isNarrow
+                ? `translate(${margin.left}, ${margin.top + 6})`
+                : `translate(${width - margin.right + 20}, ${margin.top + 20})`
+            );
 
         series.forEach((s, index) => {
-            const row = legend.append('g').attr('transform', `translate(0, ${index * 28})`);
-            row.append('line').attr('x1', 0).attr('x2', 34).attr('y1', 0).attr('y2', 0).attr('stroke', s.color).attr('stroke-width', 4);
-            row.append('text').attr('x', 42).attr('y', 0).text(s.label);
+            const row = legend.append('g')
+                .attr('transform', isNarrow
+                    ? `translate(${index * 120}, 0)`
+                    : `translate(0, ${index * 28})`
+                );
+
+            row.append('line')
+                .attr('x1', 0)
+                .attr('x2', 34)
+                .attr('y1', 0)
+                .attr('y2', 0)
+                .attr('stroke', s.color)
+                .attr('stroke-width', 4);
+
+            row.append('text')
+                .attr('x', 42)
+                .attr('y', 0)
+                .text(s.label);
         });
     }
 

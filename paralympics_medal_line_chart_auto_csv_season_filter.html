@@ -11,40 +11,57 @@
     <style>
         * { box-sizing: border-box; }
 
+        :root {
+            --sidebar-width: clamp(260px, 24vw, 300px);
+            --main-padding: clamp(16px, 2.2vw, 24px);
+            --page-bg: #f5f7fb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --muted: #4b5563;
+            --border: #e5e7eb;
+        }
+
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
-            background: #f5f7fb;
-            color: #1f2937;
+            background: var(--page-bg);
+            color: var(--text);
+            overflow-x: hidden;
         }
 
         .container {
             display: grid;
-            grid-template-columns: 300px 1fr;
+            grid-template-columns: minmax(260px, var(--sidebar-width)) minmax(0, 1fr);
             min-height: 100vh;
+            width: 100%;
         }
 
         .sidebar {
             background: #ffffff;
-            border-right: 1px solid #e5e7eb;
+            border-right: 1px solid var(--border);
             padding: 16px;
             overflow-y: auto;
+            min-width: 0;
         }
 
         .main {
-            padding: 24px;
+            padding: var(--main-padding);
+            min-width: 0;
+            overflow-x: hidden;
         }
 
         h1 {
             margin: 0 0 8px;
-            font-size: 30px;
+            font-size: clamp(1.7rem, 3vw, 1.95rem);
             line-height: 1.2;
         }
 
         .subtitle {
             margin: 0 0 20px;
-            color: #4b5563;
-            font-size: 15px;
+            color: var(--muted);
+            font-size: clamp(0.92rem, 1.4vw, 0.96rem);
+            line-height: 1.6;
+            max-width: 1000px;
         }
 
         .control-group {
@@ -96,10 +113,10 @@
         }
 
         .country-list {
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--border);
             border-radius: 10px;
             background: #fff;
-            max-height: 62vh;
+            max-height: min(62vh, 460px);
             overflow-y: auto;
         }
 
@@ -127,18 +144,22 @@
         }
 
         .chart-wrap {
-            background: #fff;
-            border: 1px solid #e5e7eb;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 20px;
+            padding: clamp(14px, 2vw, 20px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            min-height: 560px;
+            min-height: min(70vh, 560px);
+            width: 100%;
+            overflow: hidden;
         }
 
         #chart {
             width: 100%;
-            min-height: 500px;
+            min-height: clamp(360px, 58vh, 520px);
+            height: clamp(360px, 58vh, 520px);
             position: relative;
+            overflow: hidden;
         }
 
         .footer-note {
@@ -146,6 +167,7 @@
             font-size: 12px;
             color: #6b7280;
             line-height: 1.6;
+            word-break: break-word;
         }
 
         .axis path,
@@ -189,11 +211,30 @@
 
             .sidebar {
                 border-right: none;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--border);
             }
 
             .country-list {
                 max-height: 260px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .main, .sidebar {
+                padding: 14px;
+            }
+
+            .chart-wrap {
+                padding: 12px;
+            }
+
+            #chart {
+                min-height: 340px;
+                height: 340px;
+            }
+
+            .status {
+                font-size: 13px;
             }
         }
     </style>
@@ -252,8 +293,8 @@
             Default CSV files:
             <code>summer_paralympics.csv</code> and
             <code>winter_paralympics.csv</code><br>
-<!--            Keep the HTML file and both CSV files in the same folder.-->
-<!--            If the browser blocks local CSV loading from <code>file://</code>, run a local server first.-->
+            <!--            Keep the HTML file and both CSV files in the same folder.-->
+            <!--            If the browser blocks local CSV loading from <code>file://</code>, run a local server first.-->
         </div>
     </main>
 </div>
@@ -276,26 +317,26 @@
     let selectedCountries = new Set();
 
     const colorPalette = [
-        '#0000FF', // blue
-        '#FF0000', // red
-        '#008000', // green
-        '#FFA500', // orange
-        '#800080', // purple
-        '#00CED1', // turquoise
-        '#FFC0CB', // pink
-        '#A52A2A', // brown
-        '#808080', // gray
-        '#000000', // black
-        '#FFFF00', // yellow
-        '#00FFFF', // cyan
-        '#FF00FF', // magenta
-        '#800000', // maroon
-        '#808000', // olive
-        '#008080', // teal
-        '#000080', // navy
-        '#FFD700', // gold
-        '#4B0082', // indigo
-        '#7FFF00'  // chartreuse
+        '#0000FF',
+        '#FF0000',
+        '#008000',
+        '#FFA500',
+        '#800080',
+        '#00CED1',
+        '#FFC0CB',
+        '#A52A2A',
+        '#808080',
+        '#000000',
+        '#FFFF00',
+        '#00FFFF',
+        '#FF00FF',
+        '#800000',
+        '#808000',
+        '#008080',
+        '#000080',
+        '#FFD700',
+        '#4B0082',
+        '#7FFF00'
     ];
 
     function parseNumber(value) {
@@ -464,6 +505,19 @@
             `${seasonLabel} | ${metricLabel} | ${activeCountries.length} country${activeCountries.length === 1 ? '' : 'ies'} selected | Year range: ${yearText}`;
     }
 
+    function getReadableYearTicks(yearExtent) {
+        const [minYear, maxYear] = yearExtent;
+        const span = maxYear - minYear;
+
+        let step = 4;
+        if (span > 80) step = 16;
+        else if (span > 50) step = 12;
+        else if (span > 30) step = 8;
+
+        const tickStart = Math.ceil(minYear / step) * step;
+        return d3.range(tickStart, maxYear + 1, step);
+    }
+
     function renderChart() {
         const rows = getFilteredRows();
         const metric = metricSelectEl.value;
@@ -485,14 +539,24 @@
             return;
         }
 
-        const width = Math.max(chartEl.clientWidth, 720);
-        const height = 500;
-        const margin = { top: 20, right: 230, bottom: 55, left: 60 };
+        const width = Math.max(chartEl.clientWidth, 320);
+        const height = Math.max(Math.min(window.innerHeight * 0.58, 520), 360);
+
+        const isNarrow = width < 760;
+        const margin = {
+            top: 20,
+            right: isNarrow ? 20 : 230,
+            bottom: 55,
+            left: isNarrow ? 52 : 60
+        };
 
         const svg = d3.select(chartEl)
             .append('svg')
             .attr('width', width)
-            .attr('height', height);
+            .attr('height', height)
+            .style('display', 'block')
+            .style('width', '100%')
+            .style('height', '100%');
 
         const x = d3.scaleLinear()
             .domain(yearExtent)
@@ -505,8 +569,7 @@
             .nice()
             .range([height - margin.bottom, margin.top]);
 
-        const xTicks = d3.range(yearExtent[0], yearExtent[1] + 1, 4)
-            .filter(v => v <= yearExtent[1]);
+        const xTicks = getReadableYearTicks(yearExtent);
 
         svg.append('g')
             .attr('class', 'grid')
@@ -535,28 +598,32 @@
                 d3.axisBottom(x)
                     .tickValues(xTicks)
                     .tickFormat(d3.format('d'))
-            );
+            )
+            .selectAll('text')
+            .style('font-size', isNarrow ? '10px' : '11px');
 
         svg.append('g')
             .attr('class', 'axis')
             .attr('transform', `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(6));
+            .call(d3.axisLeft(y).ticks(6))
+            .selectAll('text')
+            .style('font-size', isNarrow ? '10px' : '11px');
 
         svg.append('text')
             .attr('x', (margin.left + width - margin.right) / 2)
             .attr('y', height - 12)
             .attr('text-anchor', 'middle')
             .attr('fill', '#374151')
-            .style('font-size', '14px')
+            .style('font-size', isNarrow ? '13px' : '14px')
             .text('Year');
 
         svg.append('text')
             .attr('transform', 'rotate(-90)')
             .attr('x', -(margin.top + height - margin.bottom) / 2)
-            .attr('y', 18)
+            .attr('y', isNarrow ? 16 : 18)
             .attr('text-anchor', 'middle')
             .attr('fill', '#374151')
-            .style('font-size', '14px')
+            .style('font-size', isNarrow ? '13px' : '14px')
             .text('Medal count');
 
         const line = d3.line()
@@ -580,7 +647,7 @@
                 .append('circle')
                 .attr('cx', d => x(d.year))
                 .attr('cy', d => y(d.value))
-                .attr('r', 3.5)
+                .attr('r', isNarrow ? 3 : 3.5)
                 .attr('fill', s.color)
                 .on('mouseenter', function(event, d) {
                     tooltip
@@ -602,11 +669,17 @@
 
         const legend = svg.append('g')
             .attr('class', 'legend')
-            .attr('transform', `translate(${width - margin.right + 20}, ${margin.top + 10})`);
+            .attr('transform', isNarrow
+                ? `translate(${margin.left}, ${margin.top + 6})`
+                : `translate(${width - margin.right + 20}, ${margin.top + 10})`
+            );
 
         series.forEach((s, index) => {
             const row = legend.append('g')
-                .attr('transform', `translate(0, ${index * 24})`);
+                .attr('transform', isNarrow
+                    ? `translate(${index * 110}, 0)`
+                    : `translate(0, ${index * 24})`
+                );
 
             row.append('line')
                 .attr('x1', 0)
