@@ -1,110 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Participation Size and Medal Efficiency</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #1f2937; }
-    .container { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
-    .sidebar { background: #fff; border-right: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; }
-    .main { padding: 24px; }
-    h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.2; }
-    .subtitle { margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.6; max-width: 1100px; }
-    .control-group { margin-bottom: 18px; }
-    .label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
-    select, input[type="range"] { width: 100%; }
-    select {
-      padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #fff;
-    }
-    input[type="range"] { accent-color: #3366CC; }
-    .year-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-    .year-value { font-weight: 700; color: #173f7a; min-width: 56px; text-align: right; }
-    .hint { margin-top: 8px; font-size: 12px; color: #6b7280; line-height: 1.5; }
-    .status { margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 14px; line-height: 1.5; }
-    .chart-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-height: 640px; }
-    #chart { width: 100%; min-height: 580px; position: relative; }
-    .footer-note { margin-top: 12px; font-size: 12px; color: #6b7280; line-height: 1.6; }
-    .axis path, .axis line { stroke: #cfd8e3; }
-    .grid line { stroke: #eef2f7; }
-    .grid path { display: none; }
-    .tooltip {
-      position: absolute; pointer-events: none; background: rgba(17,24,39,0.94); color: white; padding: 8px 10px;
-      border-radius: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-      opacity: 0; transform: translate(-50%, calc(-100% - 10px)); white-space: nowrap;
-    }
-    @media (max-width: 900px) {
-      .container { grid-template-columns: 1fr; }
-      .sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Participation Size and Medal Efficiency</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #1f2937; overflow-x: hidden; }
+        .container { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); min-height: 100vh; width: 100%; }
+        .sidebar { background: #fff; border-right: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; }
+        .main { padding: 20px; min-width: 0; }
+        h1 { margin: 0 0 8px; font-size: clamp(28px, 3.2vw, 46px); line-height: 1.15; }
+        .subtitle { margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.6; max-width: 100%; }
+        .control-group { margin-bottom: 18px; }
+        .label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+        select, input[type="range"] { width: 100%; }
+        select {
+            padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #fff;
+        }
+        input[type="range"] { accent-color: #3366CC; }
+        .year-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+        .year-value { font-weight: 700; color: #173f7a; min-width: 56px; text-align: right; }
+        .hint { margin-top: 8px; font-size: 12px; color: #6b7280; line-height: 1.5; }
+        .status { margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 14px; line-height: 1.5; }
+        .chart-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-height: 0; overflow: hidden; }
+        #chart { width: 100%; height: clamp(420px, 62vh, 680px); min-height: 420px; position: relative; overflow: hidden; }
+        .footer-note { margin-top: 12px; font-size: 12px; color: #6b7280; line-height: 1.6; }
+        .axis path, .axis line { stroke: #cfd8e3; }
+        .grid line { stroke: #eef2f7; }
+        .grid path { display: none; }
+        .tooltip {
+            position: absolute; pointer-events: none; background: rgba(17,24,39,0.94); color: white; padding: 8px 10px;
+            border-radius: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            opacity: 0; transform: translate(-50%, calc(-100% - 10px)); white-space: nowrap;
+        }
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            .sidebar { border-right: none; border-bottom: 1px solid #e5e7eb; }
+            .main { padding: 16px; }
+            .chart-wrap { padding: 12px; }
+            #chart { height: 56vh; min-height: 360px; }
+        }
+
+        @media (max-width: 640px) {
+            .sidebar { padding: 14px; }
+            h1 { font-size: 26px; }
+            .subtitle { font-size: 14px; }
+            .status { font-size: 13px; }
+            #chart { height: 52vh; min-height: 320px; }
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-  <aside class="sidebar">
-    <div class="control-group">
-      <label class="label" for="datasetSelect">Dataset</label>
-      <select id="datasetSelect">
-        <option value="Olympics" selected>Olympics</option>
-        <option value="Paralympics">Paralympics</option>
-      </select>
-    </div>
+    <aside class="sidebar">
+        <div class="control-group">
+            <label class="label" for="datasetSelect">Dataset</label>
+            <select id="datasetSelect">
+                <option value="Olympics" selected>Olympics</option>
+                <option value="Paralympics">Paralympics</option>
+            </select>
+        </div>
 
-    <div class="control-group">
-      <label class="label" for="seasonSelect">Games type</label>
-      <select id="seasonSelect">
-        <option value="Summer" selected>Summer</option>
-        <option value="Winter">Winter</option>
-      </select>
-    </div>
+        <div class="control-group">
+            <label class="label" for="seasonSelect">Games type</label>
+            <select id="seasonSelect">
+                <option value="Summer" selected>Summer</option>
+                <option value="Winter">Winter</option>
+            </select>
+        </div>
 
-    <div class="control-group">
-      <label class="label" for="metricSelect">Efficiency measure</label>
-      <select id="metricSelect">
-        <option value="medal_efficiency" selected>Medal efficiency (M_Total / P_Total)</option>
-        <option value="weighted_efficiency">Weighted efficiency ((3G + 2S + B) / P_Total)</option>
-      </select>
-    </div>
+        <div class="control-group">
+            <label class="label" for="metricSelect">Efficiency measure</label>
+            <select id="metricSelect">
+                <option value="medal_efficiency" selected>Medal efficiency (M_Total / P_Total)</option>
+                <option value="weighted_efficiency">Weighted efficiency ((3G + 2S + B) / P_Total)</option>
+            </select>
+        </div>
 
-    <div class="control-group">
-      <label class="label" for="yearSlider">Year</label>
-      <div class="year-row">
-        <span class="hint">Selected edition year</span>
-        <span id="yearValue" class="year-value">-</span>
-      </div>
-      <input id="yearSlider" type="range" min="0" max="0" step="1" value="0" />
-      <div class="hint">
-        Each point represents one country in the selected year. X-axis = total participants, Y-axis = efficiency,
-        point size = total medal count.
-      </div>
-    </div>
-  </aside>
+        <div class="control-group">
+            <label class="label" for="yearSlider">Year</label>
+            <div class="year-row">
+                <span class="hint">Selected edition year</span>
+                <span id="yearValue" class="year-value">-</span>
+            </div>
+            <input id="yearSlider" type="range" min="0" max="0" step="1" value="0" />
+            <div class="hint">
+                Each point represents one country in the selected year. X-axis = total participants, Y-axis = efficiency,
+                point size = total medal count.
+            </div>
+        </div>
+    </aside>
 
-  <main class="main">
-    <h1>Participation Size and Medal Efficiency</h1>
-    <p class="subtitle">
-      This visualisation addresses how team performance is associated with participation size and medal efficiency over time.
-      Each point represents a country in a given year. The horizontal axis shows participation size (total participants),
-      while the vertical axis shows medal efficiency or weighted efficiency. Point size encodes total medal count.
-      Use the controls to switch between Olympics and Paralympics, choose Summer or Winter, and move through time with the year slider.
-    </p>
+    <main class="main">
+        <h1>Participation Size and Medal Efficiency</h1>
+        <p class="subtitle">
+            This visualisation addresses how team performance is associated with participation size and medal efficiency over time.
+            Each point represents a country in a given year. The horizontal axis shows participation size (total participants),
+            while the vertical axis shows medal efficiency or weighted efficiency. Point size encodes total medal count.
+            Use the controls to switch between Olympics and Paralympics, choose Summer or Winter, and move through time with the year slider.
+        </p>
 
-    <div id="status" class="status">Loading CSV data...</div>
+        <div id="status" class="status">Loading CSV data...</div>
 
-    <div class="chart-wrap">
-      <div id="chart"></div>
-    </div>
+        <div class="chart-wrap">
+            <div id="chart"></div>
+        </div>
 
-    <div class="footer-note">
-      Files used: <code>olympic_results_in_winter_paralympics_format_with_mixed.csv</code>,
-      <code>summer_paralympics.csv</code>, and <code>winter_paralympics.csv</code>.<br>
-<!--      Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from-->
-<!--      <code>file://</code>, run a local server first.-->
-    </div>
-  </main>
+        <div class="footer-note">
+            Files used: <code>olympic_results_in_winter_paralympics_format_with_mixed.csv</code>,
+            <code>summer_paralympics.csv</code>, and <code>winter_paralympics.csv</code>.<br>
+            <!--      Keep this HTML file and the CSV files in the same folder. If the browser blocks local CSV loading from-->
+            <!--      <code>file://</code>, run a local server first.-->
+        </div>
+    </main>
 </div>
 
 <script>
@@ -114,305 +125,305 @@
 
 
     const WINTER_GAME_KEYS = new Set([
-    '1924|Chamonix|France','1928|St Moritz|Switzerland','1932|Lake Placid|United States',
-    '1936|Garmisch Partenkirchen|Germany','1948|St Moritz|Switzerland','1952|Oslo|Norway',
-    '1956|Cortina D Ampezzo|Italy','1960|Squaw Valley|United States','1964|Innsbruck|Austria',
-    '1968|Grenoble|France','1972|Sapporo|Japan','1976|Innsbruck|Austria','1980|Lake Placid|United States',
-    '1984|Sarajevo|Yugoslavia','1988|Calgary|Canada','1992|Albertville|France','1994|Lillehammer|Norway',
-    '1998|Nagano|Japan','2002|Salt Lake City|United States','2006|Turin|Italy','2010|Vancouver|Canada',
-    '2014|Sochi|Russian Federation','2018|Pyeongchang|Republic of Korea','2022|Beijing|China'
-  ]);
+        '1924|Chamonix|France','1928|St Moritz|Switzerland','1932|Lake Placid|United States',
+        '1936|Garmisch Partenkirchen|Germany','1948|St Moritz|Switzerland','1952|Oslo|Norway',
+        '1956|Cortina D Ampezzo|Italy','1960|Squaw Valley|United States','1964|Innsbruck|Austria',
+        '1968|Grenoble|France','1972|Sapporo|Japan','1976|Innsbruck|Austria','1980|Lake Placid|United States',
+        '1984|Sarajevo|Yugoslavia','1988|Calgary|Canada','1992|Albertville|France','1994|Lillehammer|Norway',
+        '1998|Nagano|Japan','2002|Salt Lake City|United States','2006|Turin|Italy','2010|Vancouver|Canada',
+        '2014|Sochi|Russian Federation','2018|Pyeongchang|Republic of Korea','2022|Beijing|China'
+    ]);
 
-  const datasetSelectEl = document.getElementById('datasetSelect');
-  const seasonSelectEl = document.getElementById('seasonSelect');
-  const metricSelectEl = document.getElementById('metricSelect');
-  const yearSliderEl = document.getElementById('yearSlider');
-  const yearValueEl = document.getElementById('yearValue');
-  const statusEl = document.getElementById('status');
-  const chartEl = document.getElementById('chart');
+    const datasetSelectEl = document.getElementById('datasetSelect');
+    const seasonSelectEl = document.getElementById('seasonSelect');
+    const metricSelectEl = document.getElementById('metricSelect');
+    const yearSliderEl = document.getElementById('yearSlider');
+    const yearValueEl = document.getElementById('yearValue');
+    const statusEl = document.getElementById('status');
+    const chartEl = document.getElementById('chart');
 
-  const state = {
-    olympicsRows: [],
-    paralympicsRows: []
-  };
+    const state = {
+        olympicsRows: [],
+        paralympicsRows: []
+    };
 
-  function parseNumber(value) {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  }
-
-  function inferOlympicSeason(year, city, country) {
-    const key = `${year}|${city}|${country}`;
-    return WINTER_GAME_KEYS.has(key) ? 'Winter' : 'Summer';
-  }
-
-  function weightedScore(gold, silver, bronze) {
-    return 3 * parseNumber(gold) + 2 * parseNumber(silver) + parseNumber(bronze);
-  }
-
-  function allCurrentRows() {
-    const datasetRows = datasetSelectEl.value === 'Olympics' ? state.olympicsRows : state.paralympicsRows;
-    return datasetRows.filter(row => row.Season === seasonSelectEl.value);
-  }
-
-  function availableYears() {
-    return Array.from(new Set(allCurrentRows().map(d => d.Year))).sort((a, b) => a - b);
-  }
-
-  function syncYearSlider() {
-    const years = availableYears();
-    if (!years.length) {
-      yearSliderEl.min = 0;
-      yearSliderEl.max = 0;
-      yearSliderEl.value = 0;
-      yearValueEl.textContent = '-';
-      return;
-    }
-    yearSliderEl.min = 0;
-    yearSliderEl.max = years.length - 1;
-    const currentYear = Number(yearValueEl.textContent);
-    const fallbackIndex = years.length - 1;
-    const newIndex = years.includes(currentYear) ? years.indexOf(currentYear) : fallbackIndex;
-    yearSliderEl.value = newIndex;
-    yearValueEl.textContent = years[newIndex];
-  }
-
-  function currentYearRows() {
-    const year = Number(yearValueEl.textContent);
-    return allCurrentRows().filter(row => row.Year === year);
-  }
-
-  function yMetric(row) {
-    if (metricSelectEl.value === 'weighted_efficiency') return row.WeightedEfficiency;
-    return row.MedalEfficiency;
-  }
-
-  function yMetricLabel() {
-    if (metricSelectEl.value === 'weighted_efficiency') {
-      return 'Weighted efficiency ((3G + 2S + B) / P_Total)';
-    }
-    return 'Medal efficiency (M_Total / P_Total)';
-  }
-
-  function renderChart() {
-    const rows = currentYearRows();
-
-    chartEl.innerHTML = '';
-    const tooltip = d3.select(chartEl).append('div').attr('class', 'tooltip');
-
-    if (!rows.length) {
-      statusEl.textContent = 'No data available for the current selection.';
-      d3.select(chartEl).append('div').style('padding', '20px').style('color', '#6b7280').text('No data available.');
-      return;
+    function parseNumber(value) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
     }
 
-    statusEl.textContent = `${datasetSelectEl.value} | ${seasonSelectEl.value} | Year ${yearValueEl.textContent} | Points: ${rows.length.toLocaleString()} | Y-axis: ${yMetricLabel()}`;
+    function inferOlympicSeason(year, city, country) {
+        const key = `${year}|${city}|${country}`;
+        return WINTER_GAME_KEYS.has(key) ? 'Winter' : 'Summer';
+    }
 
-    const width = Math.max(chartEl.clientWidth, 920);
-    const height = 580;
-    const margin = { top: 20, right: 30, bottom: 60, left: 85 };
+    function weightedScore(gold, silver, bronze) {
+        return 3 * parseNumber(gold) + 2 * parseNumber(silver) + parseNumber(bronze);
+    }
 
-    const svg = d3.select(chartEl).append('svg').attr('width', width).attr('height', height);
+    function allCurrentRows() {
+        const datasetRows = datasetSelectEl.value === 'Olympics' ? state.olympicsRows : state.paralympicsRows;
+        return datasetRows.filter(row => row.Season === seasonSelectEl.value);
+    }
 
-    const x = d3.scaleLinear()
-      .domain([0, d3.max(rows, d => d.P_Total) || 0])
-      .nice()
-      .range([margin.left, width - margin.right]);
+    function availableYears() {
+        return Array.from(new Set(allCurrentRows().map(d => d.Year))).sort((a, b) => a - b);
+    }
 
-    const y = d3.scaleLinear()
-      .domain([0, d3.max(rows, d => yMetric(d)) || 0])
-      .nice()
-      .range([height - margin.bottom, margin.top]);
+    function syncYearSlider() {
+        const years = availableYears();
+        if (!years.length) {
+            yearSliderEl.min = 0;
+            yearSliderEl.max = 0;
+            yearSliderEl.value = 0;
+            yearValueEl.textContent = '-';
+            return;
+        }
+        yearSliderEl.min = 0;
+        yearSliderEl.max = years.length - 1;
+        const currentYear = Number(yearValueEl.textContent);
+        const fallbackIndex = years.length - 1;
+        const newIndex = years.includes(currentYear) ? years.indexOf(currentYear) : fallbackIndex;
+        yearSliderEl.value = newIndex;
+        yearValueEl.textContent = years[newIndex];
+    }
 
-    const size = d3.scaleSqrt()
-      .domain([0, d3.max(rows, d => d.M_Total) || 0])
-      .range([3, 16]);
+    function currentYearRows() {
+        const year = Number(yearValueEl.textContent);
+        return allCurrentRows().filter(row => row.Year === year);
+    }
 
-    const color = d3.scaleSequential()
-      .domain(d3.extent(rows, d => d.Year))
-      .interpolator(d3.interpolateBlues);
+    function yMetric(row) {
+        if (metricSelectEl.value === 'weighted_efficiency') return row.WeightedEfficiency;
+        return row.MedalEfficiency;
+    }
 
-    svg.append('g')
-      .attr('class', 'grid')
-      .attr('transform', `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(x).ticks(8).tickSize(-(height - margin.top - margin.bottom)).tickFormat(''));
+    function yMetricLabel() {
+        if (metricSelectEl.value === 'weighted_efficiency') {
+            return 'Weighted efficiency ((3G + 2S + B) / P_Total)';
+        }
+        return 'Medal efficiency (M_Total / P_Total)';
+    }
 
-    svg.append('g')
-      .attr('class', 'grid')
-      .attr('transform', `translate(${margin.left},0)`)
-      .call(d3.axisLeft(y).ticks(6).tickSize(-(width - margin.left - margin.right)).tickFormat(''));
+    function renderChart() {
+        const rows = currentYearRows();
 
-    svg.append('g')
-      .attr('class', 'axis')
-      .attr('transform', `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(x).ticks(8));
+        chartEl.innerHTML = '';
+        const tooltip = d3.select(chartEl).append('div').attr('class', 'tooltip');
 
-    svg.append('g')
-      .attr('class', 'axis')
-      .attr('transform', `translate(${margin.left},0)`)
-      .call(d3.axisLeft(y).ticks(6));
+        if (!rows.length) {
+            statusEl.textContent = 'No data available for the current selection.';
+            d3.select(chartEl).append('div').style('padding', '20px').style('color', '#6b7280').text('No data available.');
+            return;
+        }
 
-    svg.append('text')
-      .attr('x', (margin.left + width - margin.right) / 2)
-      .attr('y', height - 14)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#374151')
-      .style('font-size', '14px')
-      .text('Participation size (P_Total)');
+        statusEl.textContent = `${datasetSelectEl.value} | ${seasonSelectEl.value} | Year ${yearValueEl.textContent} | Points: ${rows.length.toLocaleString()} | Y-axis: ${yMetricLabel()}`;
 
-    svg.append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('x', -(margin.top + height - margin.bottom) / 2)
-      .attr('y', 20)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#374151')
-      .style('font-size', '14px')
-      .text(yMetricLabel());
+        const width = Math.max(chartEl.clientWidth, 320);
+        const height = Math.max(chartEl.clientHeight || 520, 320);
+        const margin = { top: 20, right: 30, bottom: 60, left: 85 };
 
-    svg.append('g')
-      .selectAll('circle')
-      .data(rows)
-      .enter()
-      .append('circle')
-      .attr('cx', d => x(d.P_Total))
-      .attr('cy', d => y(yMetric(d)))
-      .attr('r', d => size(d.M_Total))
-      .attr('fill', d => color(d.Year))
-      .attr('fill-opacity', 0.72)
-      .attr('stroke', '#ffffff')
-      .attr('stroke-width', 0.8)
-      .on('mouseenter', function(event, d) {
-        tooltip.style('opacity', 1).html(
-          `<strong>${d.Country}</strong><br>` +
-          `Year: ${d.Year}<br>` +
-          `Participants: ${d.P_Total}<br>` +
-          `Total medals: ${d.M_Total}<br>` +
-          `Weighted score: ${d.WeightedScore}<br>` +
-          `Medal efficiency: ${d.MedalEfficiency.toFixed(3)}<br>` +
-          `Weighted efficiency: ${d.WeightedEfficiency.toFixed(3)}`
-        );
-      })
-      .on('mousemove', function(event) {
-        const rect = chartEl.getBoundingClientRect();
-        tooltip.style('left', `${event.clientX - rect.left}px`).style('top', `${event.clientY - rect.top}px`);
-      })
-      .on('mouseleave', function() {
-        tooltip.style('opacity', 0);
-      });
-  }
+        const svg = d3.select(chartEl).append('svg').attr('width', width).attr('height', height);
 
-  function attachEvents() {
-    datasetSelectEl.addEventListener('change', () => {
-      syncYearSlider();
-      renderChart();
-    });
-    seasonSelectEl.addEventListener('change', () => {
-      syncYearSlider();
-      renderChart();
-    });
-    metricSelectEl.addEventListener('change', renderChart);
-    yearSliderEl.addEventListener('input', () => {
-      const years = availableYears();
-      yearValueEl.textContent = years[Number(yearSliderEl.value)] ?? '-';
-      renderChart();
-    });
-    window.addEventListener('resize', renderChart);
-  }
+        const x = d3.scaleLinear()
+            .domain([0, d3.max(rows, d => d.P_Total) || 0])
+            .nice()
+            .range([margin.left, width - margin.right]);
 
-  function init() {
-    Promise.all([
-      new Promise((resolve, reject) => {
-        Papa.parse(OLYMPIC_CSV, {
-          download: true, header: true, skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              const parsed = (results.data || []).map(row => {
-                const pTotal = parseNumber(row.P_Total);
-                const mTotal = parseNumber(row.M_Total);
-                const weighted = weightedScore(row.Gold, row.Silver, row.Bronze);
-                return {
-                  Country: row.Country,
-                  Year: parseNumber(row.Year),
-                  P_Total: pTotal,
-                  M_Total: mTotal,
-                  WeightedScore: weighted,
-                  MedalEfficiency: pTotal > 0 ? mTotal / pTotal : 0,
-                  WeightedEfficiency: pTotal > 0 ? weighted / pTotal : 0,
-                  Season: inferOlympicSeason(parseNumber(row.Year), row.Host_City, row.Host_Country)
-                };
-              }).filter(row => row.Country && row.Year > 0 && row.P_Total > 0);
-              resolve(parsed);
-            } catch (e) { reject(e); }
-          },
-          error: reject
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(rows, d => yMetric(d)) || 0])
+            .nice()
+            .range([height - margin.bottom, margin.top]);
+
+        const size = d3.scaleSqrt()
+            .domain([0, d3.max(rows, d => d.M_Total) || 0])
+            .range([3, 16]);
+
+        const color = d3.scaleSequential()
+            .domain(d3.extent(rows, d => d.Year))
+            .interpolator(d3.interpolateBlues);
+
+        svg.append('g')
+            .attr('class', 'grid')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(8).tickSize(-(height - margin.top - margin.bottom)).tickFormat(''));
+
+        svg.append('g')
+            .attr('class', 'grid')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y).ticks(6).tickSize(-(width - margin.left - margin.right)).tickFormat(''));
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(8));
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y).ticks(6));
+
+        svg.append('text')
+            .attr('x', (margin.left + width - margin.right) / 2)
+            .attr('y', height - 14)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#374151')
+            .style('font-size', '14px')
+            .text('Participation size (P_Total)');
+
+        svg.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -(margin.top + height - margin.bottom) / 2)
+            .attr('y', 20)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#374151')
+            .style('font-size', '14px')
+            .text(yMetricLabel());
+
+        svg.append('g')
+            .selectAll('circle')
+            .data(rows)
+            .enter()
+            .append('circle')
+            .attr('cx', d => x(d.P_Total))
+            .attr('cy', d => y(yMetric(d)))
+            .attr('r', d => size(d.M_Total))
+            .attr('fill', d => color(d.Year))
+            .attr('fill-opacity', 0.72)
+            .attr('stroke', '#ffffff')
+            .attr('stroke-width', 0.8)
+            .on('mouseenter', function(event, d) {
+                tooltip.style('opacity', 1).html(
+                    `<strong>${d.Country}</strong><br>` +
+                    `Year: ${d.Year}<br>` +
+                    `Participants: ${d.P_Total}<br>` +
+                    `Total medals: ${d.M_Total}<br>` +
+                    `Weighted score: ${d.WeightedScore}<br>` +
+                    `Medal efficiency: ${d.MedalEfficiency.toFixed(3)}<br>` +
+                    `Weighted efficiency: ${d.WeightedEfficiency.toFixed(3)}`
+                );
+            })
+            .on('mousemove', function(event) {
+                const rect = chartEl.getBoundingClientRect();
+                tooltip.style('left', `${event.clientX - rect.left}px`).style('top', `${event.clientY - rect.top}px`);
+            })
+            .on('mouseleave', function() {
+                tooltip.style('opacity', 0);
+            });
+    }
+
+    function attachEvents() {
+        datasetSelectEl.addEventListener('change', () => {
+            syncYearSlider();
+            renderChart();
         });
-      }),
-      new Promise((resolve, reject) => {
-        Papa.parse(SUMMER_PARALYMPIC_CSV, {
-          download: true, header: true, skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              const parsed = (results.data || []).map(row => {
-                const pTotal = parseNumber(row.P_Total);
-                const mTotal = parseNumber(row.M_Total);
-                const weighted = weightedScore(row.Gold, row.Silver, row.Bronze);
-                return {
-                  Country: row.Country,
-                  Year: parseNumber(row.Year),
-                  P_Total: pTotal,
-                  M_Total: mTotal,
-                  WeightedScore: weighted,
-                  MedalEfficiency: pTotal > 0 ? mTotal / pTotal : 0,
-                  WeightedEfficiency: pTotal > 0 ? weighted / pTotal : 0,
-                  Season: 'Summer'
-                };
-              }).filter(row => row.Country && row.Year > 0 && row.P_Total > 0);
-              resolve(parsed);
-            } catch (e) { reject(e); }
-          },
-          error: reject
+        seasonSelectEl.addEventListener('change', () => {
+            syncYearSlider();
+            renderChart();
         });
-      }),
-      new Promise((resolve, reject) => {
-        Papa.parse(WINTER_PARALYMPIC_CSV, {
-          download: true, header: true, skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              const parsed = (results.data || []).map(row => {
-                const pTotal = parseNumber(row.P_Total);
-                const mTotal = parseNumber(row.M_Total);
-                const weighted = weightedScore(row.Gold, row.Silver, row.Bronze);
-                return {
-                  Country: row.Country,
-                  Year: parseNumber(row.Year),
-                  P_Total: pTotal,
-                  M_Total: mTotal,
-                  WeightedScore: weighted,
-                  MedalEfficiency: pTotal > 0 ? mTotal / pTotal : 0,
-                  WeightedEfficiency: pTotal > 0 ? weighted / pTotal : 0,
-                  Season: 'Winter'
-                };
-              }).filter(row => row.Country && row.Year > 0 && row.P_Total > 0);
-              resolve(parsed);
-            } catch (e) { reject(e); }
-          },
-          error: reject
+        metricSelectEl.addEventListener('change', renderChart);
+        yearSliderEl.addEventListener('input', () => {
+            const years = availableYears();
+            yearValueEl.textContent = years[Number(yearSliderEl.value)] ?? '-';
+            renderChart();
         });
-      })
-    ]).then(([olympics, paraSummer, paraWinter]) => {
-      state.olympicsRows = olympics;
-      state.paralympicsRows = [...paraSummer, ...paraWinter];
-      syncYearSlider();
-      renderChart();
-      attachEvents();
-    }).catch(() => {
-      statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
-      statusEl.style.background = '#fef2f2';
-      statusEl.style.color = '#b91c1c';
-    });
-  }
+        window.addEventListener('resize', renderChart);
+    }
 
-  init();
+    function init() {
+        Promise.all([
+            new Promise((resolve, reject) => {
+                Papa.parse(OLYMPIC_CSV, {
+                    download: true, header: true, skipEmptyLines: true,
+                    complete: (results) => {
+                        try {
+                            const parsed = (results.data || []).map(row => {
+                                const pTotal = parseNumber(row.P_Total);
+                                const mTotal = parseNumber(row.M_Total);
+                                const weighted = weightedScore(row.Gold, row.Silver, row.Bronze);
+                                return {
+                                    Country: row.Country,
+                                    Year: parseNumber(row.Year),
+                                    P_Total: pTotal,
+                                    M_Total: mTotal,
+                                    WeightedScore: weighted,
+                                    MedalEfficiency: pTotal > 0 ? mTotal / pTotal : 0,
+                                    WeightedEfficiency: pTotal > 0 ? weighted / pTotal : 0,
+                                    Season: inferOlympicSeason(parseNumber(row.Year), row.Host_City, row.Host_Country)
+                                };
+                            }).filter(row => row.Country && row.Year > 0 && row.P_Total > 0);
+                            resolve(parsed);
+                        } catch (e) { reject(e); }
+                    },
+                    error: reject
+                });
+            }),
+            new Promise((resolve, reject) => {
+                Papa.parse(SUMMER_PARALYMPIC_CSV, {
+                    download: true, header: true, skipEmptyLines: true,
+                    complete: (results) => {
+                        try {
+                            const parsed = (results.data || []).map(row => {
+                                const pTotal = parseNumber(row.P_Total);
+                                const mTotal = parseNumber(row.M_Total);
+                                const weighted = weightedScore(row.Gold, row.Silver, row.Bronze);
+                                return {
+                                    Country: row.Country,
+                                    Year: parseNumber(row.Year),
+                                    P_Total: pTotal,
+                                    M_Total: mTotal,
+                                    WeightedScore: weighted,
+                                    MedalEfficiency: pTotal > 0 ? mTotal / pTotal : 0,
+                                    WeightedEfficiency: pTotal > 0 ? weighted / pTotal : 0,
+                                    Season: 'Summer'
+                                };
+                            }).filter(row => row.Country && row.Year > 0 && row.P_Total > 0);
+                            resolve(parsed);
+                        } catch (e) { reject(e); }
+                    },
+                    error: reject
+                });
+            }),
+            new Promise((resolve, reject) => {
+                Papa.parse(WINTER_PARALYMPIC_CSV, {
+                    download: true, header: true, skipEmptyLines: true,
+                    complete: (results) => {
+                        try {
+                            const parsed = (results.data || []).map(row => {
+                                const pTotal = parseNumber(row.P_Total);
+                                const mTotal = parseNumber(row.M_Total);
+                                const weighted = weightedScore(row.Gold, row.Silver, row.Bronze);
+                                return {
+                                    Country: row.Country,
+                                    Year: parseNumber(row.Year),
+                                    P_Total: pTotal,
+                                    M_Total: mTotal,
+                                    WeightedScore: weighted,
+                                    MedalEfficiency: pTotal > 0 ? mTotal / pTotal : 0,
+                                    WeightedEfficiency: pTotal > 0 ? weighted / pTotal : 0,
+                                    Season: 'Winter'
+                                };
+                            }).filter(row => row.Country && row.Year > 0 && row.P_Total > 0);
+                            resolve(parsed);
+                        } catch (e) { reject(e); }
+                    },
+                    error: reject
+                });
+            })
+        ]).then(([olympics, paraSummer, paraWinter]) => {
+            state.olympicsRows = olympics;
+            state.paralympicsRows = [...paraSummer, ...paraWinter];
+            syncYearSlider();
+            renderChart();
+            attachEvents();
+        }).catch(() => {
+            statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
+            statusEl.style.background = '#fef2f2';
+            statusEl.style.color = '#b91c1c';
+        });
+    }
+
+    init();
 </script>
 </body>
 </html>
