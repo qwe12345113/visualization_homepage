@@ -40,18 +40,47 @@
 
         .hero h1 {
             margin: 0;
-            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            font-size: clamp(2.0rem, 4vw, 2.9rem);
             line-height: 1.02;
             letter-spacing: -0.03em;
         }
 
-        .hero p {
-            margin: 10px 0 0;
-            max-width: 720px;
+        .hero-subtitle {
+            margin: 14px 0 0;
+            max-width: 780px;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            font-size: 1rem;
-            line-height: 1.6;
+            font-size: 1.58rem;
+            line-height: 1.65;
+            font-weight: 500;
             color: var(--muted);
+        }
+
+        .author-meta {
+            margin: 22px 0 0;
+            padding-top: 12px;
+            max-width: 100%;
+            border-top: 1px solid rgba(23, 63, 122, 0.16);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 0.9rem;
+            line-height: 1.85;
+            color: #565c6d;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+        }
+
+        .author-meta strong {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #62748f;
+        }
+
+        .author-meta .meta-label {
+            font-weight: 600;
+            color: #6d7f99;
         }
 
         .toolbar {
@@ -227,9 +256,13 @@
 <div class="page">
     <header class="hero">
         <div>
-            <h1>Visualization Homepage</h1>
-            <p>
-                A landing page for your chart collection. Each card can link to a separate HTML chart page, so you can keep adding new visualizations and open them from here.
+            <h1>Olympic and Paralympic Performance Visualization</h1>
+            <p class="hero-subtitle">
+                A data-driven exploration of long-term trends, comparative performance, and participation patterns
+            </p>
+            <p class="author-meta">
+<!--                <strong>Submitted by</strong>-->
+                <span class="meta-label">Student Name:</span> Hsiang-Yin Cheng &nbsp;&nbsp;|&nbsp;&nbsp; <span class="meta-label">Student ID:</span> 25044810
             </p>
         </div>
     </header>
@@ -286,14 +319,14 @@
                 </div>
             </a>
 
-<!--            <a class="card" href="olympics_vs_paralympics_top_teams_shared_controls.html" data-category="education" data-search="education chart school literacy enrollment access">-->
-<!--                <div class="thumb placeholder" data-label="Replace with a PNG or JPG thumbnail"></div>-->
-<!--                <div class="meta">-->
-<!--                    <div class="date"> </div>-->
-<!--                    <h3 class="title">Top Teams Trends: Olympics vs Paralympics</h3>-->
-<!--                    <p class="desc">A placeholder card for a future education dashboard or trend chart.</p>-->
-<!--                </div>-->
-<!--            </a>-->
+            <!--            <a class="card" href="olympics_vs_paralympics_top_teams_shared_controls.html" data-category="education" data-search="education chart school literacy enrollment access">-->
+            <!--                <div class="thumb placeholder" data-label="Replace with a PNG or JPG thumbnail"></div>-->
+            <!--                <div class="meta">-->
+            <!--                    <div class="date"> </div>-->
+            <!--                    <h3 class="title">Top Teams Trends: Olympics vs Paralympics</h3>-->
+            <!--                    <p class="desc">A placeholder card for a future education dashboard or trend chart.</p>-->
+            <!--                </div>-->
+            <!--            </a>-->
 
             <a class="card" href="olympics_vs_paralympics_expansion_trends.html" data-category="olympics paralympics" data-search="economic growth gdp trend development chart">
                 <div class="thumb" style="background-image: url('charts/medal_wining_summer.png');"></div>
@@ -304,14 +337,14 @@
                 </div>
             </a>
 
-<!--            <a class="card" href="olympic_event_count_trends.html" data-category="inequality economy" data-search="gini coefficient explorer line chart inequality measurement">-->
-<!--                <div class="thumb placeholder" data-label="You can duplicate this card block"></div>-->
-<!--                <div class="meta">-->
-<!--                    <div class="date"> </div>-->
-<!--                    <h3 class="title">Olympic Event Count Trends</h3>-->
-<!--                    <p class="desc">A placeholder for a chart that compares inequality metrics across countries and years.</p>-->
-<!--                </div>-->
-<!--            </a>-->
+            <!--            <a class="card" href="olympic_event_count_trends.html" data-category="inequality economy" data-search="gini coefficient explorer line chart inequality measurement">-->
+            <!--                <div class="thumb placeholder" data-label="You can duplicate this card block"></div>-->
+            <!--                <div class="meta">-->
+            <!--                    <div class="date"> </div>-->
+            <!--                    <h3 class="title">Olympic Event Count Trends</h3>-->
+            <!--                    <p class="desc">A placeholder for a chart that compares inequality metrics across countries and years.</p>-->
+            <!--                </div>-->
+            <!--            </a>-->
 
             <a class="card" href="olympic_scatter_ptotal_mtotal.html" data-category="paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Scatter_Mtoal_Ptotal.png');"></div>
@@ -340,14 +373,14 @@
                 </div>
             </a>
 
-<!--            <a class="card" href="index_line_chart_medal_growth.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">-->
-<!--                <div class="thumb placeholder" data-label="Create unlimited new entries"></div>-->
-<!--                <div class="meta">-->
-<!--                    <div class="date"> </div>-->
-<!--                    <h3 class="title">Medal growth</h3>-->
-<!--                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>-->
-<!--                </div>-->
-<!--            </a>-->
+            <!--            <a class="card" href="index_line_chart_medal_growth.html" data-category="olympics education economy inequality" data-search="custom chart new visualization dashboard template">-->
+            <!--                <div class="thumb placeholder" data-label="Create unlimited new entries"></div>-->
+            <!--                <div class="meta">-->
+            <!--                    <div class="date"> </div>-->
+            <!--                    <h3 class="title">Medal growth</h3>-->
+            <!--                    <p class="desc">Duplicate a card, change the title, link, category, and description, then point it to your new chart file.</p>-->
+            <!--                </div>-->
+            <!--            </a>-->
 
 
 
