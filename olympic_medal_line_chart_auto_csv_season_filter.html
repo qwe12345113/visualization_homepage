@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Olympic Medal Line Chart (D3)</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <style>
@@ -307,14 +306,14 @@
 <script>
     const CSV_FILE = 'Datasets-20260409/Olympics-Paralympics/olympic_results_in_winter_paralympics_format_with_mixed.csv';
 
-    const statusEl = document.getElementById('status');
-    const countryListEl = document.getElementById('countryList');
-    const countrySearchEl = document.getElementById('countrySearch');
-    const metricSelectEl = document.getElementById('metricSelect');
-    const seasonSelectEl = document.getElementById('seasonSelect');
-    const selectTopBtn = document.getElementById('selectTopBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const chartEl = document.getElementById('chart');
+    const statusEl = d3.select('#status');
+    const countryListEl = d3.select('#countryList');
+    const countrySearchEl = d3.select('#countrySearch');
+    const metricSelectEl = d3.select('#metricSelect');
+    const seasonSelectEl = d3.select('#seasonSelect');
+    const selectTopBtn = d3.select('#selectTopBtn');
+    const clearBtn = d3.select('#clearBtn');
+    const chartEl = d3.select('#chart');
 
     let parsedRows = [];
     let countries = [];
@@ -383,7 +382,7 @@
     }
 
     function getFilteredRows() {
-        const season = seasonSelectEl.value;
+        const season = seasonSelectEl.property('value');
         return season === 'All'
             ? parsedRows
             : parsedRows.filter(row => row.Season === season);
@@ -401,7 +400,7 @@
     }
 
     function buildCountryTotals() {
-        countryTotals = computeCountryTotals(getFilteredRows(), metricSelectEl.value);
+        countryTotals = computeCountryTotals(getFilteredRows(), metricSelectEl.property('value'));
     }
 
     function getDisplayCountryOrder(rows, metric, searchTerm = '') {
@@ -419,38 +418,34 @@
 
     function buildCountryList(filterText = '') {
         const filteredRows = getFilteredRows();
-        const metric = metricSelectEl.value;
+        const metric = metricSelectEl.property('value');
         const totals = computeCountryTotals(filteredRows, metric);
         const displayCountries = getDisplayCountryOrder(filteredRows, metric, filterText);
 
-        countryListEl.innerHTML = '';
+        countryListEl.html('');
 
         if (!displayCountries.length) {
-            countryListEl.innerHTML =
-                '<div class="country-item">No countries match the current filter.</div>';
+            countryListEl.html('<div class="country-item">No countries match the current filter.</div>');
             return;
         }
 
-        displayCountries.forEach(country => {
-            const item = document.createElement('label');
-            item.className = 'country-item';
+        const items = countryListEl.selectAll('label.country-item')
+            .data(displayCountries, d => d)
+            .enter()
+            .append('label')
+            .attr('class', 'country-item');
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = selectedCountries.has(country);
-            checkbox.addEventListener('change', () => {
-                if (checkbox.checked) selectedCountries.add(country);
+        items.append('input')
+            .attr('type', 'checkbox')
+            .property('checked', d => selectedCountries.has(d))
+            .on('change', function(event, country) {
+                if (this.checked) selectedCountries.add(country);
                 else selectedCountries.delete(country);
                 renderChart();
             });
 
-            const text = document.createElement('span');
-            text.textContent = `${country} (${totals.get(country) || 0})`;
-
-            item.appendChild(checkbox);
-            item.appendChild(text);
-            countryListEl.appendChild(item);
-        });
+        items.append('span')
+            .text(country => `${country} (${totals.get(country) || 0})`);
     }
 
     function buildSeries(rows, metric) {
@@ -474,8 +469,8 @@
     }
 
     function updateStatus(rows, yearExtent) {
-        const seasonLabel = getSeasonLabel(seasonSelectEl.value);
-        const metricLabel = metricSelectEl.options[metricSelectEl.selectedIndex].text;
+        const seasonLabel = getSeasonLabel(seasonSelectEl.property('value'));
+        const metricLabel = metricSelectEl.node().options[metricSelectEl.node().selectedIndex].text;
         const activeCountries = Array.from(selectedCountries).filter(country =>
             rows.some(row => row.Country === country)
         );
@@ -485,8 +480,7 @@
                 ? `${yearExtent[0]} to ${yearExtent[1]}`
                 : 'No available year range';
 
-        statusEl.textContent =
-            `${seasonLabel} | ${metricLabel} | ${activeCountries.length} country${activeCountries.length === 1 ? '' : 'ies'} selected | Year range: ${yearText}`;
+        statusEl.text(`${seasonLabel} | ${metricLabel} | ${activeCountries.length} country${activeCountries.length === 1 ? '' : 'ies'} selected | Year range: ${yearText}`);
     }
 
 
@@ -505,18 +499,18 @@
 
     function renderChart() {
         const rows = getFilteredRows();
-        const metric = metricSelectEl.value;
+        const metric = metricSelectEl.property('value');
         const { yearExtent, series } = buildSeries(rows, metric);
 
         updateStatus(rows, yearExtent);
-        chartEl.innerHTML = '';
+        chartEl.html('');
 
-        const tooltip = d3.select(chartEl)
+        const tooltip = chartEl
             .append('div')
             .attr('class', 'tooltip');
 
         if (!rows.length || !series.length) {
-            d3.select(chartEl)
+            chartEl
                 .append('div')
                 .style('padding', '20px')
                 .style('color', '#6b7280')
@@ -524,11 +518,11 @@
             return;
         }
 
-        const containerWidth = chartEl.clientWidth || 760;
+        const containerWidth = chartEl.node().clientWidth || 760;
         const width = containerWidth;
         const mobile = width < 700;
         const compact = width < 900;
-        const height = Math.max(340, Math.min(620, chartEl.clientHeight || 520));
+        const height = Math.max(340, Math.min(620, chartEl.node().clientHeight || 520));
         const margin = {
             top: 20,
             right: mobile ? 20 : (compact ? 150 : 230),
@@ -536,7 +530,7 @@
             left: mobile ? 50 : 60
         };
 
-        const svg = d3.select(chartEl)
+        const svg = chartEl
             .append('svg')
             .attr('width', width)
             .attr('height', height);
@@ -637,7 +631,7 @@
                         );
                 })
                 .on('mousemove', function(event) {
-                    const rect = chartEl.getBoundingClientRect();
+                    const rect = chartEl.node().getBoundingClientRect();
                     tooltip
                         .style('left', `${event.clientX - rect.left}px`)
                         .style('top', `${event.clientY - rect.top}px`);
@@ -681,13 +675,13 @@
             .map(([country]) => country);
 
         selectedCountries = new Set(topCountries);
-        buildCountryList(countrySearchEl.value);
+        buildCountryList(countrySearchEl.property('value'));
         renderChart();
     }
 
     function clearAllCountries() {
         selectedCountries.clear();
-        buildCountryList(countrySearchEl.value);
+        buildCountryList(countrySearchEl.property('value'));
         renderChart();
     }
 
@@ -708,7 +702,7 @@
             selectedCountries = new Set(fallbackCountries);
         }
 
-        buildCountryList(countrySearchEl.value);
+        buildCountryList(countrySearchEl.property('value'));
         renderChart();
     }
 
@@ -738,36 +732,30 @@
         buildCountryList();
         renderChart();
 
-        countrySearchEl.addEventListener('input', () => buildCountryList(countrySearchEl.value));
-        metricSelectEl.addEventListener('change', handleFilterChange);
-        seasonSelectEl.addEventListener('change', handleFilterChange);
-        selectTopBtn.addEventListener('click', selectTopCountries);
-        clearBtn.addEventListener('click', clearAllCountries);
+        countrySearchEl.on('input', () => buildCountryList(countrySearchEl.property('value')));
+        metricSelectEl.on('change', handleFilterChange);
+        seasonSelectEl.on('change', handleFilterChange);
+        selectTopBtn.on('click', selectTopCountries);
+        clearBtn.on('click', clearAllCountries);
         window.addEventListener('resize', renderChart);
     }
 
-    function loadCsvAutomatically() {
-        Papa.parse(CSV_FILE, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                parsedRows = (results.data || []).filter(row => row.Country && row.Year);
+    async function loadCsvAutomatically() {
+        try {
+            const data = await d3.csv(CSV_FILE);
+            parsedRows = data.filter(row => row.Country && row.Year);
 
-                if (!parsedRows.length) {
-                    statusEl.textContent = 'CSV loaded, but no usable data rows were found.';
-                    return;
-                }
-
-                initializeUI();
-            },
-            error: () => {
-                statusEl.innerHTML =
-                    `Unable to load <code>${CSV_FILE}</code> automatically. Make sure the CSV file is in the same folder as this HTML file. If you opened the file directly in the browser, start a local server first.`;
-                statusEl.style.background = '#fef2f2';
-                statusEl.style.color = '#b91c1c';
+            if (!parsedRows.length) {
+                statusEl.text('CSV loaded, but no usable data rows were found.');
+                return;
             }
-        });
+
+            initializeUI();
+        } catch (error) {
+            statusEl.html(`Unable to load <code>${CSV_FILE}</code> automatically. Make sure the CSV file is in the same folder as this HTML file. If you opened the file directly in the browser, start a local server first.`);
+            statusEl.style('background', '#fef2f2');
+            statusEl.style('color', '#b91c1c');
+        }
     }
 
     loadCsvAutomatically();

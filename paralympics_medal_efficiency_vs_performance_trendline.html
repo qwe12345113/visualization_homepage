@@ -230,9 +230,9 @@
     const SUMMER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/summer_paralympics.csv';
     const WINTER_PARALYMPIC_CSV = 'Datasets-20260409/Olympics-Paralympics/winter_paralympics.csv';
 
-    const seasonFilterEl = document.getElementById('seasonFilter');
-    const statusEl = document.getElementById('status');
-    const chartEl = document.getElementById('chart');
+    const seasonFilterEl = d3.select('#seasonFilter');
+    const statusEl = d3.select('#status');
+    const chartEl = d3.select('#chart');
 
     const seasonColors = {
         Summer: '#3366CC',
@@ -283,7 +283,7 @@
     }
 
     function filteredRows() {
-        const season = seasonFilterEl.value;
+        const season = seasonFilterEl.property('value');
         if (season === 'All') return rows;
         return rows.filter(d => d.GamesType === season);
     }
@@ -303,8 +303,7 @@
         const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
         const intercept = (sumY - slope * sumX) / n;
 
-        const minX = d3.min(data, d => d.MedalEfficiency);
-        const maxX = d3.max(data, d => d.MedalEfficiency);
+        const [minX, maxX] = d3.extent(data, d => d.MedalEfficiency);
 
         return {
             points: [
@@ -316,12 +315,12 @@
 
     function renderChart() {
         const data = filteredRows();
-        chartEl.innerHTML = '';
-        const tooltip = d3.select(chartEl).append('div').attr('class', 'tooltip');
+        chartEl.html('');
+        const tooltip = chartEl.append('div').attr('class', 'tooltip');
 
         if (!data.length) {
-            statusEl.textContent = 'No data available for the current selection.';
-            d3.select(chartEl)
+            statusEl.text('No data available for the current selection.');
+            chartEl
                 .append('div')
                 .style('padding', '20px')
                 .style('color', '#6b7280')
@@ -329,7 +328,7 @@
             return;
         }
 
-        const width = Math.max(chartEl.clientWidth, 320);
+        const width = Math.max(chartEl.node().clientWidth, 320);
         const height = Math.max(Math.min(window.innerHeight * 0.6, 580), 360);
 
         const isNarrow = width < 760;
@@ -340,7 +339,7 @@
             left: isNarrow ? 56 : 70
         };
 
-        const svg = d3.select(chartEl)
+        const svg = chartEl
             .append('svg')
             .attr('width', width)
             .attr('height', height)
@@ -358,7 +357,7 @@
             .nice()
             .range([height - margin.bottom, margin.top]);
 
-        statusEl.textContent = `Paralympics only | Season filter: ${seasonFilterEl.value} | Points: ${data.length.toLocaleString()}`;
+        statusEl.textContent = `Paralympics only | Season filter: ${seasonFilterEl.property('value')} | Points: ${data.length.toLocaleString()}`;
 
         svg.append('g')
             .attr('class', 'grid')
@@ -424,16 +423,16 @@
                 );
             })
             .on('mousemove', function(event) {
-                const rect = chartEl.getBoundingClientRect();
+                const rect = chartEl.node().getBoundingClientRect();
                 tooltip.style('left', `${event.clientX - rect.left}px`).style('top', `${event.clientY - rect.top}px`);
             })
             .on('mouseleave', function() {
                 tooltip.style('opacity', 0);
             });
 
-        const seasonsToDraw = seasonFilterEl.value === 'All'
+        const seasonsToDraw = seasonFilterEl.property('value') === 'All'
             ? ['Summer', 'Winter']
-            : [seasonFilterEl.value];
+            : [seasonFilterEl.property('value')];
 
         seasonsToDraw.forEach(season => {
             const seasonData = data.filter(d => d.GamesType === season);
@@ -527,17 +526,17 @@
             rows = [...summerRows, ...winterRows];
 
             if (!rows.length) {
-                statusEl.textContent = 'CSV loaded, but no usable data rows were found.';
+                statusEl.text('CSV loaded, but no usable data rows were found.');
                 return;
             }
 
             renderChart();
-            seasonFilterEl.addEventListener('change', renderChart);
+            seasonFilterEl.on('change', renderChart);
             window.addEventListener('resize', renderChart);
         }).catch(() => {
-            statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
-            statusEl.style.background = '#fef2f2';
-            statusEl.style.color = '#b91c1c';
+            statusEl.text('Failed to load CSV files. Make sure the HTML file, summer_paralympics.csv, and winter_paralympics.csv are in the same folder.');
+            statusEl.style('background', '#fef2f2');
+            statusEl.style('color', '#b91c1c');
         });
     }
 

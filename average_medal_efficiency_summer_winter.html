@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Average Medal Efficiency Trends</title>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -120,35 +119,21 @@
         return WINTER_GAME_KEYS.has(key) ? 'Winter' : 'Summer';
     }
 
-    function loadCsv(fileName, season) {
-        return new Promise((resolve, reject) => {
-            Papa.parse(fileName, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    try {
-                        const rows = (results.data || []).map(row => {
-                            const year = parseNumber(row.Year);
-                            const pTotal = parseNumber(row.P_Total);
-                            const mTotal = parseNumber(row.M_Total);
-                            return {
-                                Country: row.Country,
-                                Year: year,
-                                P_Total: pTotal,
-                                M_Total: mTotal,
-                                Efficiency: pTotal > 0 ? (mTotal / pTotal) : null,
-                                Season: season
-                            };
-                        }).filter(row => row.Country && row.Year > 0 && row.Efficiency !== null);
-                        resolve(rows);
-                    } catch (error) {
-                        reject(error);
-                    }
-                },
-                error: reject
-            });
-        });
+    async function loadCsv(fileName, season) {
+        const data = await d3.csv(fileName);
+        return data.map(row => {
+            const year = parseNumber(row.Year);
+            const pTotal = parseNumber(row.P_Total);
+            const mTotal = parseNumber(row.M_Total);
+            return {
+                Country: row.Country,
+                Year: year,
+                P_Total: pTotal,
+                M_Total: mTotal,
+                Efficiency: pTotal > 0 ? (mTotal / pTotal) : null,
+                Season: season
+            };
+        }).filter(row => row.Country && row.Year > 0 && row.Efficiency !== null);
     }
 
     function currentRows() {
@@ -156,16 +141,14 @@
     }
 
     function buildSeries(rows) {
-        const grouped = d3.group(rows, d => d.Season, d => d.Year);
-
         function seasonSeries(season) {
-            const seasonMap = grouped.get(season) || new Map();
-            return Array.from(seasonMap.entries())
-                .sort((a, b) => a[0] - b[0])
-                .map(([year, yearRows]) => ({
-                    year,
-                    value: d3.mean(yearRows, d => d.Efficiency)
-                }))
+            return d3.rollups(
+                rows.filter(d => d.Season === season),
+                yearRows => d3.mean(yearRows, d => d.Efficiency),
+                d => d.Year
+            )
+                .sort((a, b) => d3.ascending(a[0], b[0]))
+                .map(([year, value]) => ({ year, value }))
                 .filter(d => Number.isFinite(d.value));
         }
 
@@ -272,30 +255,19 @@
 
     function init() {
         Promise.all([
-            new Promise((resolve, reject) => {
-                Papa.parse(OLYMPIC_CSV, {
-                    download: true, header: true, skipEmptyLines: true,
-                    complete: (results) => {
-                        try {
-                            const parsed = (results.data || []).map(row => {
-                                const year = parseNumber(row.Year);
-                                const pTotal = parseNumber(row.P_Total);
-                                const mTotal = parseNumber(row.M_Total);
-                                return {
-                                    Country: row.Country,
-                                    Year: year,
-                                    P_Total: pTotal,
-                                    M_Total: mTotal,
-                                    Efficiency: pTotal > 0 ? (mTotal / pTotal) : null,
-                                    Season: inferOlympicSeason(year, row.Host_City, row.Host_Country)
-                                };
-                            }).filter(row => row.Country && row.Year > 0 && row.Efficiency !== null);
-                            resolve(parsed);
-                        } catch (e) { reject(e); }
-                    },
-                    error: reject
-                });
-            }),
+            d3.csv(OLYMPIC_CSV).then(data => data.map(row => {
+                const year = parseNumber(row.Year);
+                const pTotal = parseNumber(row.P_Total);
+                const mTotal = parseNumber(row.M_Total);
+                return {
+                    Country: row.Country,
+                    Year: year,
+                    P_Total: pTotal,
+                    M_Total: mTotal,
+                    Efficiency: pTotal > 0 ? (mTotal / pTotal) : null,
+                    Season: inferOlympicSeason(year, row.Host_City, row.Host_Country)
+                };
+            }).filter(row => row.Country && row.Year > 0 && row.Efficiency !== null)),
             loadCsv(SUMMER_PARALYMPIC_CSV, 'Summer'),
             loadCsv(WINTER_PARALYMPIC_CSV, 'Winter')
         ]).then(([olympics, paraSummer, paraWinter]) => {

@@ -296,14 +296,14 @@
 
     const colorPalette = ['#3366CC','#DC3912','#109618','#FF9900','#990099','#0099C6','#DD4477','#66AA00','#B82E2E','#316395','#994499','#22AA99','#AAAA11','#6633CC','#E67300'];
 
-    const datasetSelectEl = document.getElementById('datasetSelect');
-    const seasonSelectEl = document.getElementById('seasonSelect');
-    const countrySearchEl = document.getElementById('countrySearch');
-    const countryListEl = document.getElementById('countryList');
-    const selectTopBtn = document.getElementById('selectTopBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const statusEl = document.getElementById('status');
-    const chartEl = document.getElementById('chart');
+    const datasetSelectEl = d3.select('#datasetSelect');
+    const seasonSelectEl = d3.select('#seasonSelect');
+    const countrySearchEl = d3.select('#countrySearch');
+    const countryListEl = d3.select('#countryList');
+    const selectTopBtn = d3.select('#selectTopBtn');
+    const clearBtn = d3.select('#clearBtn');
+    const statusEl = d3.select('#status');
+    const chartEl = d3.select('#chart');
 
     const state = { olympicsRows: [], paralympicsRows: [], countries: [], selectedCountries: new Set() };
 
@@ -318,8 +318,8 @@
     }
 
     function currentRows() {
-        const allRows = datasetSelectEl.value === 'Olympics' ? state.olympicsRows : state.paralympicsRows;
-        return allRows.filter(row => row.Season === seasonSelectEl.value);
+        const allRows = datasetSelectEl.property('value') === 'Olympics' ? state.olympicsRows : state.paralympicsRows;
+        return allRows.filter(row => row.Season === seasonSelectEl.property('value'));
     }
 
     function computeCountryTotals(rows) {
@@ -343,31 +343,31 @@
     function buildCountryList() {
         const rows = currentRows();
         const totals = computeCountryTotals(rows);
-        const displayCountries = getDisplayCountryOrder(rows, countrySearchEl.value);
-        countryListEl.innerHTML = '';
+        const displayCountries = getDisplayCountryOrder(rows, countrySearchEl.property('value'));
+        countryListEl.html('');
 
         if (!displayCountries.length) {
-            countryListEl.innerHTML = '<div class="country-item">No countries match the current filter.</div>';
+            countryListEl.html('<div class="country-item">No countries match the current filter.</div>');
             return;
         }
 
-        displayCountries.forEach(country => {
-            const item = document.createElement('label');
-            item.className = 'country-item';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = state.selectedCountries.has(country);
-            checkbox.addEventListener('change', () => {
-                if (checkbox.checked) state.selectedCountries.add(country);
+        const items = countryListEl.selectAll('label.country-item')
+            .data(displayCountries, d => d)
+            .enter()
+            .append('label')
+            .attr('class', 'country-item');
+
+        items.append('input')
+            .attr('type', 'checkbox')
+            .property('checked', d => state.selectedCountries.has(d))
+            .on('change', function(event, country) {
+                if (this.checked) state.selectedCountries.add(country);
                 else state.selectedCountries.delete(country);
                 renderChart();
             });
-            const text = document.createElement('span');
-            text.textContent = `${country} (${totals.get(country) || 0})`;
-            item.appendChild(checkbox);
-            item.appendChild(text);
-            countryListEl.appendChild(item);
-        });
+
+        items.append('span')
+            .text(country => `${country} (${totals.get(country) || 0})`);
     }
 
     function selectTopCountries(count = 5) {
@@ -388,7 +388,7 @@
         const series = orderedSelected.map((country, index) => ({
             country,
             color: colorPalette[index % colorPalette.length],
-            values: rows.filter(row => row.Country === country).sort((a, b) => a.Year - b.Year).map(row => ({
+            values: rows.filter(row => row.Country === country).sort((a, b) => d3.ascending(a.Year, b.Year)).map(row => ({
                 year: row.Year, value: row.WeightedScore, gold: row.Gold, silver: row.Silver, bronze: row.Bronze
             }))
         }));
@@ -410,22 +410,22 @@
 
     function updateStatus(series, yearExtent) {
         const yearText = yearExtent && yearExtent[0] != null && yearExtent[1] != null ? `${yearExtent[0]} to ${yearExtent[1]}` : 'No available year range';
-        statusEl.textContent = `Dataset: ${datasetSelectEl.value} | ${seasonSelectEl.value} | Weighted medal score | ${series.length} team${series.length === 1 ? '' : 's'} selected | Year range: ${yearText}`;
+        statusEl.textContent = `Dataset: ${datasetSelectEl.property('value')} | ${seasonSelectEl.property('value')} | Weighted medal score | ${series.length} team${series.length === 1 ? '' : 's'} selected | Year range: ${yearText}`;
     }
 
     function renderChart() {
         const rows = currentRows();
         const { series, yearExtent, allValues } = buildSeries(rows);
         updateStatus(series, yearExtent);
-        chartEl.innerHTML = '';
-        const tooltip = d3.select(chartEl).append('div').attr('class', 'tooltip');
+        chartEl.html('');
+        const tooltip = chartEl.append('div').attr('class', 'tooltip');
 
         if (!series.length || !yearExtent || yearExtent[0] == null) {
-            d3.select(chartEl).append('div').style('padding', '20px').style('color', '#6b7280').text('Select at least one team to display the chart.');
+            chartEl.append('div').style('padding', '20px').style('color', '#6b7280').text('Select at least one team to display the chart.');
             return;
         }
 
-        const width = Math.max(chartEl.clientWidth, 320);
+        const width = Math.max(chartEl.node().clientWidth, 320);
         const height = Math.max(Math.min(window.innerHeight * 0.6, 580), 360);
 
         const isNarrow = width < 820;
@@ -436,7 +436,7 @@
             left: isNarrow ? 56 : 80
         };
 
-        const svg = d3.select(chartEl)
+        const svg = chartEl
             .append('svg')
             .attr('width', width)
             .attr('height', height)
@@ -509,7 +509,7 @@
                     tooltip.style('opacity', 1).html(`<strong>${s.country}</strong><br>Year: ${d.year}<br>Weighted score: ${d.value}<br>Gold: ${d.gold}, Silver: ${d.silver}, Bronze: ${d.bronze}`);
                 })
                 .on('mousemove', function(event) {
-                    const rect = chartEl.getBoundingClientRect();
+                    const rect = chartEl.node().getBoundingClientRect();
                     tooltip.style('left', `${event.clientX - rect.left}px`).style('top', `${event.clientY - rect.top}px`);
                 })
                 .on('mouseleave', function() { tooltip.style('opacity', 0); });
@@ -622,16 +622,16 @@
             state.paralympicsRows = [...paraSummer, ...paraWinter];
             state.countries = Array.from(new Set([...state.olympicsRows, ...state.paralympicsRows].map(r => r.Country))).sort((a, b) => a.localeCompare(b));
             selectTopCountries(5);
-            datasetSelectEl.addEventListener('change', handleFilterChange);
-            seasonSelectEl.addEventListener('change', handleFilterChange);
-            countrySearchEl.addEventListener('input', buildCountryList);
-            selectTopBtn.addEventListener('click', () => selectTopCountries(5));
-            clearBtn.addEventListener('click', () => { state.selectedCountries.clear(); buildCountryList(); renderChart(); });
+            datasetSelectEl.on('change', handleFilterChange);
+            seasonSelectEl.on('change', handleFilterChange);
+            countrySearchEl.on('input', buildCountryList);
+            selectTopBtn.on('click', () => selectTopCountries(5));
+            clearBtn.on('click', () => { state.selectedCountries.clear(); buildCountryList(); renderChart(); });
             window.addEventListener('resize', renderChart);
         }).catch(() => {
-            statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
-            statusEl.style.background = '#fef2f2';
-            statusEl.style.color = '#b91c1c';
+            statusEl.text('Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder.');
+            statusEl.style('background', '#fef2f2');
+            statusEl.style('color', '#b91c1c');
         });
     }
 

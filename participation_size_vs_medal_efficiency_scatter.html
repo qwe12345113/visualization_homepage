@@ -134,13 +134,13 @@
         '2014|Sochi|Russian Federation','2018|Pyeongchang|Republic of Korea','2022|Beijing|China'
     ]);
 
-    const datasetSelectEl = document.getElementById('datasetSelect');
-    const seasonSelectEl = document.getElementById('seasonSelect');
-    const metricSelectEl = document.getElementById('metricSelect');
-    const yearSliderEl = document.getElementById('yearSlider');
-    const yearValueEl = document.getElementById('yearValue');
-    const statusEl = document.getElementById('status');
-    const chartEl = document.getElementById('chart');
+    const datasetSelectEl = d3.select('#datasetSelect');
+    const seasonSelectEl = d3.select('#seasonSelect');
+    const metricSelectEl = d3.select('#metricSelect');
+    const yearSliderEl = d3.select('#yearSlider');
+    const yearValueEl = d3.select('#yearValue');
+    const statusEl = d3.select('#status');
+    const chartEl = d3.select('#chart');
 
     const state = {
         olympicsRows: [],
@@ -162,44 +162,44 @@
     }
 
     function allCurrentRows() {
-        const datasetRows = datasetSelectEl.value === 'Olympics' ? state.olympicsRows : state.paralympicsRows;
-        return datasetRows.filter(row => row.Season === seasonSelectEl.value);
+        const datasetRows = datasetSelectEl.property('value') === 'Olympics' ? state.olympicsRows : state.paralympicsRows;
+        return datasetRows.filter(row => row.Season === seasonSelectEl.property('value'));
     }
 
     function availableYears() {
-        return Array.from(new Set(allCurrentRows().map(d => d.Year))).sort((a, b) => a - b);
+        return Array.from(new Set(allCurrentRows().map(d => d.Year))).sort(d3.ascending);
     }
 
     function syncYearSlider() {
         const years = availableYears();
         if (!years.length) {
-            yearSliderEl.min = 0;
-            yearSliderEl.max = 0;
-            yearSliderEl.value = 0;
-            yearValueEl.textContent = '-';
+            yearSliderEl.attr('min', 0);
+            yearSliderEl.attr('max', 0);
+            yearSliderEl.property('value', 0);
+            yearValueEl.text('-');
             return;
         }
-        yearSliderEl.min = 0;
-        yearSliderEl.max = years.length - 1;
-        const currentYear = Number(yearValueEl.textContent);
+        yearSliderEl.attr('min', 0);
+        yearSliderEl.attr('max', years.length - 1);
+        const currentYear = Number(yearValueEl.text());
         const fallbackIndex = years.length - 1;
         const newIndex = years.includes(currentYear) ? years.indexOf(currentYear) : fallbackIndex;
-        yearSliderEl.value = newIndex;
-        yearValueEl.textContent = years[newIndex];
+        yearSliderEl.property('value', newIndex);
+        yearValueEl.text(years[newIndex]);
     }
 
     function currentYearRows() {
-        const year = Number(yearValueEl.textContent);
+        const year = Number(yearValueEl.text());
         return allCurrentRows().filter(row => row.Year === year);
     }
 
     function yMetric(row) {
-        if (metricSelectEl.value === 'weighted_efficiency') return row.WeightedEfficiency;
+        if (metricSelectEl.property('value') === 'weighted_efficiency') return row.WeightedEfficiency;
         return row.MedalEfficiency;
     }
 
     function yMetricLabel() {
-        if (metricSelectEl.value === 'weighted_efficiency') {
+        if (metricSelectEl.property('value') === 'weighted_efficiency') {
             return 'Weighted efficiency ((3G + 2S + B) / P_Total)';
         }
         return 'Medal efficiency (M_Total / P_Total)';
@@ -208,22 +208,22 @@
     function renderChart() {
         const rows = currentYearRows();
 
-        chartEl.innerHTML = '';
-        const tooltip = d3.select(chartEl).append('div').attr('class', 'tooltip');
+        chartEl.html('');
+        const tooltip = chartEl.append('div').attr('class', 'tooltip');
 
         if (!rows.length) {
-            statusEl.textContent = 'No data available for the current selection.';
-            d3.select(chartEl).append('div').style('padding', '20px').style('color', '#6b7280').text('No data available.');
+            statusEl.text('No data available for the current selection.');
+            chartEl.append('div').style('padding', '20px').style('color', '#6b7280').text('No data available.');
             return;
         }
 
-        statusEl.textContent = `${datasetSelectEl.value} | ${seasonSelectEl.value} | Year ${yearValueEl.textContent} | Points: ${rows.length.toLocaleString()} | Y-axis: ${yMetricLabel()}`;
+        statusEl.textContent = `${datasetSelectEl.property('value')} | ${seasonSelectEl.property('value')} | Year ${yearValueEl.textContent} | Points: ${rows.length.toLocaleString()} | Y-axis: ${yMetricLabel()}`;
 
-        const width = Math.max(chartEl.clientWidth, 320);
-        const height = Math.max(chartEl.clientHeight || 520, 320);
+        const width = Math.max(chartEl.node().clientWidth, 320);
+        const height = Math.max(chartEl.node().clientHeight || 520, 320);
         const margin = { top: 20, right: 30, bottom: 60, left: 85 };
 
-        const svg = d3.select(chartEl).append('svg').attr('width', width).attr('height', height);
+        const svg = chartEl.append('svg').attr('width', width).attr('height', height);
 
         const x = d3.scaleLinear()
             .domain([0, d3.max(rows, d => d.P_Total) || 0])
@@ -304,7 +304,7 @@
                 );
             })
             .on('mousemove', function(event) {
-                const rect = chartEl.getBoundingClientRect();
+                const rect = chartEl.node().getBoundingClientRect();
                 tooltip.style('left', `${event.clientX - rect.left}px`).style('top', `${event.clientY - rect.top}px`);
             })
             .on('mouseleave', function() {
@@ -313,18 +313,18 @@
     }
 
     function attachEvents() {
-        datasetSelectEl.addEventListener('change', () => {
+        datasetSelectEl.on('change', () => {
             syncYearSlider();
             renderChart();
         });
-        seasonSelectEl.addEventListener('change', () => {
+        seasonSelectEl.on('change', () => {
             syncYearSlider();
             renderChart();
         });
-        metricSelectEl.addEventListener('change', renderChart);
-        yearSliderEl.addEventListener('input', () => {
+        metricSelectEl.on('change', renderChart);
+        yearSliderEl.on('input', () => {
             const years = availableYears();
-            yearValueEl.textContent = years[Number(yearSliderEl.value)] ?? '-';
+            yearValueEl.text(years[Number(yearSliderEl.property('value'))] ?? '-');
             renderChart();
         });
         window.addEventListener('resize', renderChart);
@@ -417,9 +417,9 @@
             renderChart();
             attachEvents();
         }).catch(() => {
-            statusEl.textContent = 'Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder, then open the page through a local server.';
-            statusEl.style.background = '#fef2f2';
-            statusEl.style.color = '#b91c1c';
+            statusEl.text('Failed to load CSV files. Make sure the HTML file, olympic_results_in_winter_paralympics_format_with_mixed.csv, summer_paralympics.csv, and winter_paralympics.csv are in the same folder.');
+            statusEl.style('background', '#fef2f2');
+            statusEl.style('color', '#b91c1c');
         });
     }
 
