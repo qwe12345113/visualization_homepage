@@ -83,6 +83,34 @@
             color: #6d7f99;
         }
 
+
+        .info-block {
+            margin: 0 0 32px;
+            padding: 18px 20px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.72);
+            box-shadow: var(--shadow);
+        }
+
+        .info-block-title {
+            margin: 0 0 10px;
+            font: 700 0.88rem system-ui, sans-serif;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #62748f;
+        }
+
+        .info-block p {
+            margin: 0;
+            color: #465f86;
+            font: 400 0.98rem/1.7 system-ui, sans-serif;
+        }
+
+        .info-block p + p {
+            margin-top: 8px;
+        }
+
         .toolbar {
             display: flex;
             gap: 12px;
@@ -251,6 +279,7 @@
             .title { font-size: 1.75rem; }
         }
     </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
 <div class="page">
@@ -267,6 +296,13 @@
         </div>
     </header>
 
+
+    <section class="info-block">
+        <h2 class="info-block-title">Data used and suitability</h2>
+        <p>This project uses olympic_results.csv, summer_paralympics.csv, and winter_paralympics.csv. The two Paralympic datasets are already available in country-year format, while the Olympic results data were reorganised into the same structure for comparison. Performance is measured mainly by weighted medal score, with total medals as a secondary measure.</p>
+
+    </section>
+
     <div class="toolbar">
         <input id="searchInput" class="search" type="search" placeholder="Search charts by title, description, or category..." />
         <button class="filter-btn active" data-filter="all">All</button>
@@ -281,31 +317,36 @@
                 <div class="thumb" style="background-image: url('charts/Team_Performance_Trends.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Team Performance Trends</h3>
+                    <h3 class="title">Q1: Team Performance Trends</h3>
                     <p class="desc">Long-term trends in Olympic team performance by weighted medal score, showing dominant, rising, and declining teams across editions.</p>
                 </div>
             </a>
+
             <a class="card" href="olympics_vs_paralympics_small_multiples.html" data-category="olympics paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Olympics_Paralympics_Small-Multiples_Comparison.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Small-Multiples Comparison: Olympics vs Paralympics</h3>
+                    <h3 class="title">Q2: Small-Multiples Comparison: Olympics vs Paralympics</h3>
                     <p class="desc">Small-multiples comparison of Olympic and Paralympic performance trajectories for selected countries, showing how weighted medal scores change across the two competition systems.</p>
                 </div>
             </a>
+
             <a class="card" href="participation_size_vs_medal_efficiency_scatter.html" data-category="olympics paralympics" data-search="custom chart new visualization dashboard template">
                 <div class="thumb" style="background-image: url('charts/Participation_Size_and_Medal_Efficiency.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Participation Size and Medal Efficiency</h3>
+                    <h3 class="title">Q3: Participation Size and Medal Efficiency</h3>
                     <p class="desc">Scatter plot of participation size and medal efficiency for Paralympic teams, where the x-axis shows total participants and the y-axis shows medal efficiency, allowing comparison between scale-driven and efficiency-driven success.</p>
                 </div>
             </a>
+
+
+
             <a class="card" href="olympic_medal_line_chart_auto_csv_season_filter.html" data-category="olympics" data-search="olympic medal line chart country filters summer winter medals total gold silver bronze">
                 <div class="thumb" style="background-image: url('charts/Olympic_Medal_Trends.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Olympic Medal Trends</h3>
+                    <h3 class="title">Appendix: Olympic Medal Trends</h3>
                     <p class="desc">Long-term trends in total medals won by selected countries in the Olympics.</p>
                 </div>
             </a>
@@ -314,7 +355,7 @@
                 <div class="thumb" style="background-image: url('charts/Paralympics_Medal_Trends.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Paralympic Medal Trends</h3>
+                    <h3 class="title">Appendix: Paralympic Medal Trends</h3>
                     <p class="desc">Long-term trends in Winter Paralympic team performance for selected countries. </p>
                 </div>
             </a>
@@ -332,7 +373,7 @@
                 <div class="thumb" style="background-image: url('charts/medal_wining_summer.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Olympics vs Paralympics Expansion Trends</h3>
+                    <h3 class="title">Appendix: Olympics vs Paralympics Expansion Trends</h3>
                     <p class="desc">Change in the number of medal-winning and participating countries over time in the Summer Olympics and Summer Paralympics.</p>
                 </div>
             </a>
@@ -350,7 +391,7 @@
                 <div class="thumb" style="background-image: url('charts/Scatter_Mtoal_Ptotal.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Paralympics Scatter Plot</h3>
+                    <h3 class="title">Appendix: Paralympics Scatter Plot</h3>
                     <p class="desc">Relationship between participation size and team performance in the Paralympics.</p>
                 </div>
             </a>
@@ -359,7 +400,7 @@
                 <div class="thumb" style="background-image: url('charts/Medal_EfficiencyvsTeam_Performance.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Paralympics Medal Efficiency vs Performance Trendline</h3>
+                    <h3 class="title">Appendix: Paralympics Medal Efficiency vs Performance Trendline</h3>
                     <p class="desc">Relationship between medal efficiency and team performance in the Paralympics.</p>
                 </div>
             </a>
@@ -368,7 +409,7 @@
                 <div class="thumb" style="background-image: url('charts/Paralympic_Average_Medal_Efficiency_Trends.png');"></div>
                 <div class="meta">
                     <div class="date"> </div>
-                    <h3 class="title">Average Medal Efficiency Trends</h3>
+                    <h3 class="title">Appendix: Average Medal Efficiency Trends</h3>
                     <p class="desc">Change in average medal efficiency over time in the Summer and Winter Paralympics.</p>
                 </div>
             </a>
@@ -395,40 +436,41 @@
 </div>
 
 <script>
-    const searchInput = document.getElementById('searchInput');
-    const buttons = Array.from(document.querySelectorAll('.filter-btn'));
-    const cards = Array.from(document.querySelectorAll('.card'));
-    const emptyState = document.getElementById('emptyState');
+    const searchInput = d3.select('#searchInput');
+    const buttons = d3.selectAll('.filter-btn');
+    const cards = d3.selectAll('.card');
+    const emptyState = d3.select('#emptyState');
 
     let activeFilter = 'all';
 
     function applyFilters() {
-        const keyword = searchInput.value.trim().toLowerCase();
+        const keyword = searchInput.property('value').trim().toLowerCase();
         let visibleCount = 0;
 
-        cards.forEach(card => {
-            const categoryText = (card.dataset.category || '').toLowerCase();
-            const searchText = (card.dataset.search || '').toLowerCase();
+        cards.each(function() {
+            const card = d3.select(this);
+            const node = this;
+            const categoryText = (node.dataset.category || '').toLowerCase();
+            const searchText = (node.dataset.search || '').toLowerCase();
             const matchesFilter = activeFilter === 'all' || categoryText.includes(activeFilter);
-            const matchesSearch = !keyword || searchText.includes(keyword) || card.innerText.toLowerCase().includes(keyword);
+            const matchesSearch = !keyword || searchText.includes(keyword) || node.innerText.toLowerCase().includes(keyword);
             const show = matchesFilter && matchesSearch;
-            card.style.display = show ? 'block' : 'none';
+
+            card.style('display', show ? 'block' : 'none');
             if (show) visibleCount += 1;
         });
 
-        emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+        emptyState.style('display', visibleCount === 0 ? 'block' : 'none');
     }
 
-    buttons.forEach(button => {
-        button.addEventListener('click', () => {
-            buttons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            activeFilter = button.dataset.filter;
-            applyFilters();
-        });
+    buttons.on('click', function() {
+        buttons.classed('active', false);
+        d3.select(this).classed('active', true);
+        activeFilter = this.dataset.filter;
+        applyFilters();
     });
 
-    searchInput.addEventListener('input', applyFilters);
+    searchInput.on('input', applyFilters);
     applyFilters();
 </script>
 </body>
